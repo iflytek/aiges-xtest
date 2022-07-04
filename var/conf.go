@@ -51,6 +51,7 @@ var (
 	ReqMode       int           = 0                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
 	LinearNs      int           = 0                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
 	TestSub       string        = "ase"                  // 测试业务sub, 缺省test
+	InputCmd      bool          = false                  // jbzhou5 非会话模式切换为命令行输入
 
 	PerfConfigOn bool = false //true: 开启性能检测 false: 不开启性能检测
 	PerfLevel    int  = 0     //非会话模式默认0
@@ -97,9 +98,16 @@ func ConfInit(conf *utils.Configure) error {
 		return err
 	}
 
-	//输入流
-	if err := secParsePl(conf); err != nil {
-		return err
+	//jbzhou5 输入流
+	if InputCmd { // 开启命令行输入
+		Payload = []string{} // 清空payload输入
+		if err := secParseCmd(conf); err != nil {
+			return err
+		}
+	} else {
+		if err := secParsePl(conf); err != nil {
+			return err
+		}
 	}
 
 	//输出流
@@ -287,6 +295,11 @@ func secParseSvc(conf *utils.Configure) error {
 		LinearNs = (linearms * 1000 * 1000) / MultiThr
 	}
 
+	// jbzhou5 当模式为非会话且配置了cmd输入，才开启手动输入
+	if inputCmd, err := conf.GetBool(secTmp, "inputCmd"); err == nil && ReqMode == 0 {
+		InputCmd = inputCmd
+	}
+
 	AsyncDrop = make(chan OutputMeta, MultiThr*10) // channel长度取并发数*10, channel满则同步写.
 	return nil
 }
@@ -421,5 +434,39 @@ func secParseDStream(conf *utils.Configure) error {
 	default:
 		return errors.New("downstream output invalid, output=0/1/2")
 	}
+	return nil
+}
+
+//jbzhou5 解析命令行输入的数据
+func secParseCmd(conf *utils.Configure) error {
+	meta := InputMeta{}
+	meta.Name = "CMD"
+	meta.DataSrc = "CMD"
+	meta.SliceOn = 0
+	meta.UpSlice = 1280
+	meta.UpInterval = 40
+
+	meta.DataDesc = make(map[string]string)
+	descstr := "encoding=utf8;compress=gzip"
+	descarr := strings.Split(descstr, ";")
+	for _, desc := range descarr {
+		tmp := strings.Split(desc, "=")
+		if len(tmp) == 2 {
+			meta.DataDesc[tmp[0]] = tmp[1]
+		}
+	}
+	var data string
+	n, err := Input(data)
+	if n == 0 || err != nil {
+		return errors.New("cmd input error")
+	}
+	// read upstream valid file list
+	meta.DataList = make([][]byte, 0, 1)
+	meta.DataList = append(meta.DataList, []byte(data))
+
+	println("DataList:", len(meta.DataList))
+
+	// 上行数据流
+	UpStreams = append(UpStreams, meta)
 	return nil
 }

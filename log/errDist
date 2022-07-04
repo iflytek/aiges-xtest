@@ -1,21 +1,5 @@
-10222("rpc error: code = DeadlineExceeded desc = context deadline exceeded"): 1811
-10222("rpc error: code = DeadlineExceeded desc = context deadline exceeded"): 82
-10222("rpc error: code = DeadlineExceeded desc = context deadline exceeded"): 21
-0(""): 4488
-10110("service license not enough"): 5512
-10110("service license not enough"): 4797
-0(""): 5203
-10222("can't insert conn to cm"): 821
-0(""): 23
-10110("lack of license -> now:10,max:10"): 1
-0(""): 38
-10110("lack of license -> now:9,max:10"): 3
-0(""): 1546
-10110("service license not enough"): 8454
-0(""): 2133
-10110("lack of license -> now:9,max:10"): 7867
-0(""): 4418
-10110("service license not enough"): 5582
+0(""): 1
+0(""): 1
 0(""): 1
 0(""): 1
 0(""): 1

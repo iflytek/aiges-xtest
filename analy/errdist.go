@@ -90,8 +90,11 @@ func (eda *errDistAnalyser) dumpLog() {
 		eda.log.Errorw("error dist Log dump fail with open file", "err", err.Error(), "file", _var.ErrAnaDst)
 		return
 	}
-
+	//delete(eda.errCnt, 0)
 	for eCode, eCount := range eda.errCnt {
+		//if eCode == 0 { // 正确请求，直接返回
+		//	continue
+		//}
 		var edesc string
 		if eda.errDsc[eCode] != nil {
 			edesc = eda.errDsc[eCode].Error()

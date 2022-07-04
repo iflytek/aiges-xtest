@@ -1,6 +1,7 @@
 package _var
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -23,4 +24,15 @@ func Usage() {
 	fmt.Println("usage of common test tool")
 	fmt.Println("-f		specify config file")
 	os.Exit(0)
+}
+
+// jbzhou5 Input data
+func Input(data string) (int, error) {
+	in := bufio.NewReader(os.Stdin)
+	fmt.Print("Please input data: ")
+	n, err := fmt.Fscanln(in, &data)
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }

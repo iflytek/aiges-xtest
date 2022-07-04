@@ -267,7 +267,7 @@ func multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, inte
 		err = proto.Unmarshal(resp.GetData()[0].Data, &dataOut)
 		if err != nil {
 			cli.Log.Errorw("multiUpStream Resp Unmarshal fail", "err", err.Error(), "respData", resp.GetData()[0].Data)
-			unBlockChanWrite(errchan, analy.ErrInfo{-1, err})
+			unBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
 			return
 		}
 
