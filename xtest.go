@@ -93,7 +93,6 @@ func main() {
 			wg.Done()
 		}()
 		linearCtl() // 并发线性增长控制,防止瞬时并发请求冲击
-
 	}
 	wg.Wait()
 	// 关闭异步落盘协程&wait
