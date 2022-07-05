@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"git.iflytek.com/AIaaS/xsf/utils"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/atomic"
 	"io/ioutil"
 	"os"
@@ -78,6 +80,12 @@ var (
 	OutputDst = "./log/result" // output=0时,该项配置输出文件名; output=1时,该项配置输出目录名
 	ErrAnaDst = "./log/errDist"
 	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
+
+	// jbzhou5 Prometheus并发协程计数器
+	ConcurrencyCnt = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "Concurrency_Go_Routine",
+		Help: "The total number of processed events",
+	})
 )
 
 func ConfInit(conf *utils.Configure) error {

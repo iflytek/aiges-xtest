@@ -68,8 +68,9 @@ func OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	caller := xsfcli.NewCaller(cli)
 
 	analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.UP, 0, "")
-
+	_var.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
 	resp, code, err := caller.SessionCall(xsfcli.ONESHORT, _var.SvcName, "AIIn", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
+	_var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	if err != nil {
 		cli.Log.Errorw("OneShotCall request fail", "err", err.Error(), "code", code,
 			"header", dataIn.Headers, "params", dataIn.Params)

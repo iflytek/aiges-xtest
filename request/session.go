@@ -29,7 +29,9 @@ func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	var thrRslt []protocol.LoaderOutput = make([]protocol.LoaderOutput, 0, 1)
 	var thrLock sync.Mutex
 	reqSid := util.NewSid(_var.TestSub)
+	_var.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
 	hdl, status, info := sessAIIn(cli, indexs, &thrRslt, &thrLock, reqSid)
+
 	if info.ErrStr != nil {
 		if len(hdl) != 0 {
 			_ = sessAIExcp(cli, hdl, reqSid)
@@ -43,7 +45,7 @@ func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 		}
 	}
 	_ = sessAIExcp(cli, hdl, reqSid)
-
+	_var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	// 结果落盘
 	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
 	for k, _ := range thrRslt {

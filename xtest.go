@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"xtest/analy"
+	"xtest/prometheus"
 	"xtest/request"
 	"xtest/var"
 )
@@ -51,6 +52,18 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+
+	//ticker := time.NewTicker(time.Microsecond * 50) // 50ms定时器
+	//go func() {                                     // jbzhou5开启一个协程监听协程并行路数
+	//	for {
+	//		select {
+	//		case <-ticker.C:
+	//			fmt.Println(_var.ConcurrencyCnt.)
+	//		}
+	//	}
+	//}()
+
+	go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
 	for i := 0; i < _var.MultiThr; i++ {
 		wg.Add(1)
 		go func() {
@@ -60,7 +73,6 @@ func main() {
 				if loopIndex < 0 {
 					break
 				}
-
 				switch _var.ReqMode {
 				case 0:
 					info := request.OneShotCall(cli, loopIndex)
@@ -81,6 +93,7 @@ func main() {
 			wg.Done()
 		}()
 		linearCtl() // 并发线性增长控制,防止瞬时并发请求冲击
+
 	}
 	wg.Wait()
 	// 关闭异步落盘协程&wait
