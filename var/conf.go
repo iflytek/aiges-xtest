@@ -83,8 +83,18 @@ var (
 
 	// jbzhou5 Prometheus并发协程计数器
 	ConcurrencyCnt = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "Concurrency_Go_Routine",
+		Name: "Xtest_Concurrency_Go_Routine",
 		Help: "The total number of processed events",
+	})
+
+	CpuPer = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "Xtest_CPU_Percent",
+		Help: "Xtest cpu percent",
+	})
+
+	MemPer = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "Xtest_MEM_Percent",
+		Help: "Xtest mem percent",
 	})
 )
 

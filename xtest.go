@@ -53,16 +53,16 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	//ticker := time.NewTicker(time.Microsecond * 50) // 50ms定时器
-	//go func() {                                     // jbzhou5开启一个协程监听协程并行路数
-	//	for {
-	//		select {
-	//		case <-ticker.C:
-	//			fmt.Println(_var.ConcurrencyCnt.)
-	//		}
-	//	}
-	//}()
-
+	ticker := time.NewTicker(time.Microsecond * 50) // 50ms定时器
+	go func() {                                     // jbzhou5开启一个协程监听协程并行路数
+		for {
+			select {
+			case <-ticker.C:
+				prometheus.ReadMem()
+			}
+		}
+	}()
+	//prometheus.ReadMem()
 	go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
 	for i := 0; i < _var.MultiThr; i++ {
 		wg.Add(1)

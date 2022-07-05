@@ -101,3 +101,41 @@
 10110("service license not enough"): 63865
 0(""): 31654
 10110("service license not enough"): 68346
+0(""): 30228
+10110("service license not enough"): 69772
+0(""): 1
+0(""): 1
+0(""): 1
+0(""): 1
+0(""): 34086
+10110("service license not enough"): 65914
+0(""): 1
+0(""): 1
+0(""): 843
+10110("service license not enough"): 157
+0(""): 826
+10110("service license not enough"): 174
+10110("service license not enough"): 179
+0(""): 821
+0(""): 1
+0(""): 1
+0(""): 1
+0(""): 1
+0(""): 1
+0(""): 9954
+10110("service license not enough"): 46
+10110("service license not enough"): 521
+0(""): 99479
+0(""): 99484
+10110("service license not enough"): 516
+10222("rpc error: code = DeadlineExceeded desc = context deadline exceeded"): 6
+0(""): 245346
+10110("service license not enough"): 754648
+0(""): 5015
+10110("service license not enough"): 4985
+0(""): 18292
+10110("lack of license -> now:10,max:10"): 31708
+0(""): 19644
+10110("service license not enough"): 30356
+10110("service license not enough"): 30717
+0(""): 19283
