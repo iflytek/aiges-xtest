@@ -29,9 +29,7 @@ func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	var thrRslt []protocol.LoaderOutput = make([]protocol.LoaderOutput, 0, 1)
 	var thrLock sync.Mutex
 	reqSid := util.NewSid(_var.TestSub)
-	_var.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
 	hdl, status, info := sessAIIn(cli, indexs, &thrRslt, &thrLock, reqSid)
-
 	if info.ErrStr != nil {
 		if len(hdl) != 0 {
 			_ = sessAIExcp(cli, hdl, reqSid)
@@ -45,7 +43,6 @@ func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 		}
 	}
 	_ = sessAIExcp(cli, hdl, reqSid)
-	_var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	// 结果落盘
 	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
 	for k, _ := range thrRslt {
@@ -84,6 +81,10 @@ func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 }
 
 func sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) {
+	// jbzhou5 并行网络协程监听
+	_var.ConcurrencyCnt.Add(1)
+	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+
 	// request构包；构造首包SeqNo=1,同加载器建立会话上下文信息; 故首帧不携带具体数据
 	println(indexs)
 	req := xsfcli.NewReq()
@@ -168,6 +169,10 @@ func sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol.LoaderOutput
 }
 
 func multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, interval int, indexs map[int]int, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
+	// jbzhou5 并行网络协程监听
+	_var.ConcurrencyCnt.Add(1)
+	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+
 	defer swg.Done()
 
 	sTime := time.Now()
@@ -312,6 +317,10 @@ func rtCalibration(curReq int, interval int, sTime time.Time) {
 
 // downStream 下行调用单线程;
 func sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) {
+	// jbzhou5 并行网络协程监听
+	_var.ConcurrencyCnt.Add(1)
+	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+
 	// loop read downstream result
 	for {
 		req := xsfcli.NewReq()
@@ -364,6 +373,9 @@ func sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.Load
 }
 
 func sessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
+	// jbzhou5 并行网络协程监听
+	_var.ConcurrencyCnt.Add(1)
+	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 
 	req := xsfcli.NewReq()
 	req.SetParam("baseId", "0")
