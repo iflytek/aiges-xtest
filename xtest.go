@@ -64,9 +64,12 @@ func main() {
 	//	}
 	//}()
 	//prometheus.ReadMem()
-	// 启动一个系统资源定时任务
-	util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
-	go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
+
+	if _var.PrometheusSwitch {
+		// 启动一个系统资源定时任务
+		util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
+		go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
+	}
 	for i := 0; i < _var.MultiThr; i++ {
 		wg.Add(1)
 		go func() {

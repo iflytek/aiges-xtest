@@ -43,20 +43,20 @@ type OutputMeta struct {
 
 var (
 	// [svcMode]
-	SvcId         string        = "s12345678"
-	SvcName       string        = "AIservice"            // dst service name
-	TimeOut       int           = 1000                   // 超时时间: ms, 对应加载器waitTime
-	LossDeviation int           = 50                     // 自身性能损耗误差, ms.
-	MultiThr      int           = 100                    // 请求并发数
-	DropThr                     = 100                    // 下行数据异步输出线程数
-	LoopCnt       *atomic.Int64 = atomic.NewInt64(10000) // 请求总次数
-	ReqMode       int           = 0                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
-	LinearNs      int           = 0                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
-	TestSub       string        = "ase"                  // 测试业务sub, 缺省test
-	InputCmd      bool          = false                  // jbzhou5 非会话模式切换为命令行输入
-
-	PerfConfigOn bool = false //true: 开启性能检测 false: 不开启性能检测
-	PerfLevel    int  = 0     //非会话模式默认0
+	SvcId            string        = "s12345678"
+	SvcName          string        = "AIservice"            // dst service name
+	TimeOut          int           = 1000                   // 超时时间: ms, 对应加载器waitTime
+	LossDeviation    int           = 50                     // 自身性能损耗误差, ms.
+	MultiThr         int           = 100                    // 请求并发数
+	DropThr                        = 100                    // 下行数据异步输出线程数
+	LoopCnt          *atomic.Int64 = atomic.NewInt64(10000) // 请求总次数
+	ReqMode          int           = 0                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
+	LinearNs         int           = 0                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
+	TestSub          string        = "ase"                  // 测试业务sub, 缺省test
+	InputCmd         bool          = false                  // jbzhou5 非会话模式切换为命令行输入
+	PrometheusSwitch bool          = false                  // jbzhou5 Prometheus写入开关
+	PerfConfigOn     bool          = false                  //true: 开启性能检测 false: 不开启性能检测
+	PerfLevel        int           = 0                      //非会话模式默认0
 	//会话模式0: 从发第一帧到最后一帧的性能
 	//会话模式1:首结果(发送第一帧到最后一帧的性能)
 	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
@@ -87,12 +87,13 @@ var (
 		Help: "The total number of processed events",
 	})
 
-	CpuPer = promauto.NewGauge(prometheus.GaugeOpts{
+	// jbzhou5 Prometheus监听参数
+	CpuPer = promauto.NewGauge(prometheus.GaugeOpts{ // CPU 利用率
 		Name: "Xtest_CPU_Percent",
 		Help: "Xtest cpu percent",
 	})
 
-	MemPer = promauto.NewGauge(prometheus.GaugeOpts{
+	MemPer = promauto.NewGauge(prometheus.GaugeOpts{ // 内存利用率
 		Name: "Xtest_MEM_Percent",
 		Help: "Xtest mem percent",
 	})
@@ -316,6 +317,11 @@ func secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 当模式为非会话且配置了cmd输入，才开启手动输入
 	if inputCmd, err := conf.GetBool(secTmp, "inputCmd"); err == nil && ReqMode == 0 {
 		InputCmd = inputCmd
+	}
+
+	// jbzhou5 Prometheus写入开关
+	if prometheusSwitch, err := conf.GetBool(secTmp, "prometheus_switch"); err == nil {
+		PrometheusSwitch = prometheusSwitch
 	}
 
 	AsyncDrop = make(chan OutputMeta, MultiThr*10) // channel长度取并发数*10, channel满则同步写.
