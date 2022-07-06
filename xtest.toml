@@ -17,8 +17,8 @@ perfLevel=1                     # 非会话模式默认0
                                 #会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
 inputCmd = false # jbzhou5 切换为命令行输入，仅在非会话模式生效
 prometheus_switch = true  # jbzhou5 Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
-file_sorted = 2  # 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
-file_name_seq = "" # 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
+file_sorted = 1  # 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
+file_name_seq = "_" # 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
 [header]
 "appid" = "100IME"
 "uid" = "1234567890"
@@ -41,7 +41,7 @@ type = "image"                  # 数据类型，支持"audio","text","image","v
 describe = "k1=v1;k2=v2"        # 数据描述信息,多个描述信息以";"分割
                                 # 图像支持如下属性："encoding", 如"encoding=jpg"
 [dataKey2]
-inputSrc = "./testdata/text"               # 上行数据流数据源, 配置文件路径(配置为目录则循环读取目录中文件)
+inputSrc = "./testdata/text2"               # 上行数据流数据源, 配置文件路径(配置为目录则循环读取目录中文件)
 sliceOn = false                 # 切片开关, false:关闭切换, true:开启切片
 sliceSize = 1280                # 上行数据切片大小,用于会话模式: byte
 interval = 40                   # 上行数据发包间隔,用于会话模式: ms. 注：动态校准,每个包间隔非严格interval

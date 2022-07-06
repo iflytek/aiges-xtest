@@ -18,7 +18,6 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep str
 	if err != nil {
 		return [][]byte{}, err
 	}
-
 	filemap := make(map[string]string)
 	// 过滤空文件及子目录
 	file_index := []string{}
@@ -27,7 +26,6 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep str
 			ext := filepath.Ext(file.Name())                             // 获取文件后缀
 			filenamePrefix := file.Name()[0 : len(file.Name())-len(ext)] // 去除文件扩展名
 			filename := strings.Split(filenamePrefix, sep)[0]            // 分割文件名称
-			fmt.Println(filename)
 			file_index = append(file_index, filename)
 			filemap[filename] = file.Name()
 		}
@@ -36,7 +34,10 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep str
 		file_index[i], file_index[j] = file_index[j], file_index[i]
 	})
 	sort.Slice(file_index, func(i, j int) bool {
-		return cmpFunc(file_index[i], file_index[j])
+		if len(file_index[i]) == len(file_index[j]) {
+			return cmpFunc(file_index[i], file_index[j])
+		}
+		return len(file_index[i]) < len(file_index[j])
 	})
 
 	fmt.Println(file_index)
