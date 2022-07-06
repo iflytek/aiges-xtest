@@ -16,6 +16,7 @@ perfLevel=1                     # 非会话模式默认0
                                 #会话模式1:首结果(发送第一帧到最后一帧的性能)
                                 #会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
 inputCmd = false # jbzhou5 切换为命令行输入，仅在非会话模式生效
+prometheus_switch = false  # Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
 
 [header]
 "appid" = "100IME"
