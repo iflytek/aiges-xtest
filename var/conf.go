@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"xtest/util"
 )
 
 const (
@@ -55,8 +56,10 @@ var (
 	TestSub          string        = "ase"                  // 测试业务sub, 缺省test
 	InputCmd         bool          = false                  // jbzhou5 非会话模式切换为命令行输入
 	PrometheusSwitch bool          = false                  // jbzhou5 Prometheus写入开关
-	PerfConfigOn     bool          = false                  //true: 开启性能检测 false: 不开启性能检测
-	PerfLevel        int           = 0                      //非会话模式默认0
+	FileSorted       int           = 0                      // jbzhou5
+
+	PerfConfigOn bool = false //true: 开启性能检测 false: 不开启性能检测
+	PerfLevel    int  = 0     //非会话模式默认0
 	//会话模式0: 从发第一帧到最后一帧的性能
 	//会话模式1:首结果(发送第一帧到最后一帧的性能)
 	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
@@ -215,29 +218,21 @@ func secParsePl(conf *utils.Configure) error {
 		if err != nil {
 			return err
 		}
+
 		if fi.IsDir() {
-			// 遍历目录文件
-			files, err := ioutil.ReadDir(meta.DataSrc)
+			data, err := util.ReadDir(fi, meta.DataSrc, func(i, j string) bool {
+				if FileSorted == 0 {
+					return i == j
+				} else if FileSorted == 1 {
+					return i < j
+				} else {
+					return i > j
+				}
+			})
 			if err != nil {
 				return err
 			}
-			filemap := make(map[string]string)
-			// 过滤空文件及子目录
-			for _, file := range files {
-				if !file.IsDir() && file.Size() != 0 {
-					file_index := strings.Split(file.Name(), "_")[0]
-					filemap[file_index] = file.Name()
-				}
-			}
-			for i := 1; i <= len(filemap); i++ {
-				index := strconv.Itoa(i)
-				data, err := ioutil.ReadFile(meta.DataSrc + "/" + filemap[index])
-				if err != nil {
-					fmt.Printf("read file %s fail, %s ", meta.DataSrc+"/"+filemap[index], err.Error())
-					return err
-				}
-				meta.DataList = append(meta.DataList, data)
-			}
+			meta.DataList = append(meta.DataList, data...)
 		} else if fi.Size() != 0 {
 			data, err := ioutil.ReadFile(meta.DataSrc)
 			if err != nil {
@@ -322,6 +317,11 @@ func secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 Prometheus写入开关
 	if prometheusSwitch, err := conf.GetBool(secTmp, "prometheus_switch"); err == nil {
 		PrometheusSwitch = prometheusSwitch
+	}
+
+	// jbzhou5 设置读入文件顺序
+	if fileSorted, err := conf.GetInt(secTmp, "file_sorted"); err == nil {
+		FileSorted = fileSorted
 	}
 
 	AsyncDrop = make(chan OutputMeta, MultiThr*10) // channel长度取并发数*10, channel满则同步写.
