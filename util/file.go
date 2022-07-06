@@ -11,7 +11,7 @@ import (
 )
 
 // ReadDir 读取文件夹文件
-func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep string) ([][]byte, error) {
+func ReadDir(fi os.FileInfo, src string, sep string, flag int) ([][]byte, error) {
 	// 遍历目录文件
 	ans := [][]byte{}
 	files, err := ioutil.ReadDir(src)
@@ -34,10 +34,7 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep str
 		file_index[i], file_index[j] = file_index[j], file_index[i]
 	})
 	sort.Slice(file_index, func(i, j int) bool {
-		if len(file_index[i]) == len(file_index[j]) {
-			return cmpFunc(file_index[i], file_index[j])
-		}
-		return len(file_index[i]) < len(file_index[j])
+		return CompFunc(flag, file_index[i], file_index[j])
 	})
 
 	fmt.Println(file_index)
@@ -51,4 +48,20 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep str
 	}
 
 	return ans, nil
+}
+
+func CompFunc(flag int, i, j string) bool {
+	if flag == 0 {
+		return i == j // 打乱顺序
+	} else if flag == 1 {
+		if len(i) == len(j) {
+			return i < j
+		}
+		return len(i) < len(j) // 升序
+	} else {
+		if len(i) == len(j) {
+			return i > j
+		}
+		return len(i) > len(j) // 降序
+	}
 }

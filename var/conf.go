@@ -220,15 +220,7 @@ func secParsePl(conf *utils.Configure) error {
 		}
 
 		if fi.IsDir() {
-			data, err := util.ReadDir(fi, meta.DataSrc, func(i, j string) bool {
-				if FileSorted == 0 {
-					return i == j // 打乱顺序
-				} else if FileSorted == 1 {
-					return i < j // 升序
-				} else {
-					return i > j // 降序
-				}
-			}, FileNameSeq)
+			data, err := util.ReadDir(fi, meta.DataSrc, FileNameSeq, FileSorted)
 			if err != nil {
 				return err
 			}
