@@ -195,3 +195,17 @@
 10110("service license not enough"): 7065
 0(""): 3285
 10110("service license not enough"): 6715
+0(""): 3446
+10110("lack of license -> now:10,max:10"): 6554
+0(""): 3384
+10110("lack of license -> now:10,max:10"): 6616
+0(""): 3543
+10110("service license not enough"): 6457
+0(""): 3127
+10110("service license not enough"): 6873
+0(""): 3291
+10110("service license not enough"): 6709
+0(""): 3807
+10110("service license not enough"): 6193
+0(""): 4053
+10110("service license not enough"): 5947

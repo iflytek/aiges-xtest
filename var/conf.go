@@ -56,10 +56,10 @@ var (
 	TestSub          string        = "ase"                  // 测试业务sub, 缺省test
 	InputCmd         bool          = false                  // jbzhou5 非会话模式切换为命令行输入
 	PrometheusSwitch bool          = false                  // jbzhou5 Prometheus写入开关
-	FileSorted       int           = 0                      // jbzhou5
-
-	PerfConfigOn bool = false //true: 开启性能检测 false: 不开启性能检测
-	PerfLevel    int  = 0     //非会话模式默认0
+	FileSorted       int           = 0                      // jbzhou5 文件排序方式
+	FileNameSeq      string        = "/"                    // 文件名分割方式
+	PerfConfigOn     bool          = false                  //true: 开启性能检测 false: 不开启性能检测
+	PerfLevel        int           = 0                      //非会话模式默认0
 	//会话模式0: 从发第一帧到最后一帧的性能
 	//会话模式1:首结果(发送第一帧到最后一帧的性能)
 	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
@@ -222,13 +222,13 @@ func secParsePl(conf *utils.Configure) error {
 		if fi.IsDir() {
 			data, err := util.ReadDir(fi, meta.DataSrc, func(i, j string) bool {
 				if FileSorted == 0 {
-					return i == j
+					return i == j // 打乱顺序
 				} else if FileSorted == 1 {
-					return i < j
+					return i < j // 升序
 				} else {
-					return i > j
+					return i > j // 降序
 				}
-			})
+			}, FileNameSeq)
 			if err != nil {
 				return err
 			}
@@ -322,6 +322,11 @@ func secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 设置读入文件顺序
 	if fileSorted, err := conf.GetInt(secTmp, "file_sorted"); err == nil {
 		FileSorted = fileSorted
+	}
+
+	// jbzhou5 文件名分割方式
+	if filenameSeq, err := conf.GetString(secTmp, "file_name_seq"); err == nil && filenameSeq != "" {
+		FileNameSeq = filenameSeq
 	}
 
 	AsyncDrop = make(chan OutputMeta, MultiThr*10) // channel长度取并发数*10, channel满则同步写.

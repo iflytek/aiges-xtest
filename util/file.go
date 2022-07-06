@@ -5,12 +5,13 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
 
 // ReadDir 读取文件夹文件
-func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool) ([][]byte, error) {
+func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool, sep string) ([][]byte, error) {
 	// 遍历目录文件
 	ans := [][]byte{}
 	files, err := ioutil.ReadDir(src)
@@ -23,7 +24,10 @@ func ReadDir(fi os.FileInfo, src string, cmpFunc func(i, j string) bool) ([][]by
 	file_index := []string{}
 	for _, file := range files {
 		if !file.IsDir() && file.Size() != 0 {
-			filename := strings.Split(file.Name(), "_")[0]
+			ext := filepath.Ext(file.Name())                             // 获取文件后缀
+			filenamePrefix := file.Name()[0 : len(file.Name())-len(ext)] // 去除文件扩展名
+			filename := strings.Split(filenamePrefix, sep)[0]            // 分割文件名称
+			fmt.Println(filename)
 			file_index = append(file_index, filename)
 			filemap[filename] = file.Name()
 		}
