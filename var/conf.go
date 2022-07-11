@@ -89,13 +89,11 @@ var (
 		Name: "Xtest_Concurrency_Go_Routine",
 		Help: "The total number of processed events",
 	})
-
 	// jbzhou5 Prometheus监听参数
 	CpuPer = promauto.NewGauge(prometheus.GaugeOpts{ // CPU 利用率
 		Name: "Xtest_CPU_Percent",
 		Help: "Xtest cpu percent",
 	})
-
 	MemPer = promauto.NewGauge(prometheus.GaugeOpts{ // 内存利用率
 		Name: "Xtest_MEM_Percent",
 		Help: "Xtest mem percent",
@@ -103,7 +101,6 @@ var (
 )
 
 func ConfInit(conf *utils.Configure) error {
-
 	if err := secParseSvc(conf); err != nil {
 		return err
 	}
@@ -368,7 +365,6 @@ func secParseParams(conf *utils.Configure) error {
 
 		if ok {
 			for key, value := range kv {
-				fmt.Println(key, reflect.TypeOf(value))
 				var valStr string
 				switch value.(type) {
 				case string:

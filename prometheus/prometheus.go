@@ -9,8 +9,9 @@ import (
 )
 
 func Start() {
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":2117", nil)
+	server := http.NewServeMux()
+	server.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":2117", server)
 }
 
 // ReadMem 获取内存使用

@@ -34,9 +34,9 @@ const (
 	SessEnd      SessStatus = 2
 	SessOnce     SessStatus = 3
 
-	outputPerfFile   = "perf.txt"
-	outputRecordFile = "perfReqRecord.csv"
-	outputPerfImg    = "perf.jpg"
+	outputPerfFile   = "./log/perf.txt"
+	outputRecordFile = "./log/perfReqRecord.csv"
+	outputPerfImg    = "./log/perf.jpg"
 )
 
 /*
@@ -400,4 +400,8 @@ func (pf *PerfModule) anallyArray(data []float32) (min, max, average, aver95, av
 			costs[(len(costs)-1)*99/100]
 	}(data)
 	return
+}
+
+func (pf *PerfModule) XXX() {
+	fmt.Println("哈哈哈： ", pf.correctReqCost)
 }

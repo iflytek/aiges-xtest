@@ -70,27 +70,34 @@ func main() {
 		util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
 		go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
 	}
+	go util.ProgressShow(_var.LoopCnt)
 	for i := 0; i < _var.MultiThr; i++ {
 		wg.Add(1)
 		go func() {
 			for {
-				// loopCnt测试请求次数控制;
-				loopIndex := _var.LoopCnt.Dec()
-				if loopIndex < 0 {
+				if _var.LoopCnt.Load() <= 0 {
 					break
 				}
 				switch _var.ReqMode {
 				case 0:
+					loopIndex := _var.LoopCnt.Load()
 					info := request.OneShotCall(cli, loopIndex)
+					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 1:
+					loopIndex := _var.LoopCnt.Load()
 					info := request.SessionCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 2:
+					loopIndex := _var.LoopCnt.Load()
 					info := request.TextCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 3:
+					loopIndex := _var.LoopCnt.Load()
 					info := request.FileSessionCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				default:
 					println("Unsupported Mode!")
@@ -106,7 +113,7 @@ func main() {
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
 	xsfcli.DestroyClient(cli)
-	fmt.Println("cli finish")
+	fmt.Println("\ncli finish")
 	return
 }
 
