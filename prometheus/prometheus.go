@@ -50,14 +50,14 @@ func MetricValue(m prometheus.Gauge) (float64, error) {
 	return val, nil
 }
 
-// 获取资源数据绘制折线图
+// GenerateData 获取资源数据绘制折线图
 func GenerateData(cv, mv float64) {
 	times = append(times, float64(time.Now().UnixMicro()))
 	cpus = append(cpus, cv)
 	mems = append(mems, mv)
 }
 
-// 绘制图片
+// Run 绘制图片
 func Run(dst string) error {
 	c := util.Charts{
 		Vals: util.LinesData{
@@ -76,7 +76,3 @@ func Run(dst string) error {
 	}
 	return nil
 }
-
-//func main() {
-//	Start()
-//}

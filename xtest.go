@@ -53,18 +53,6 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-
-	//ticker := time.NewTicker(time.Microsecond * 50) // 50ms定时器
-	//go func() {                                     // jbzhou5开启一个协程监听协程并行路数
-	//	for {
-	//		select {
-	//		case <-ticker.C:
-	//			prometheus.ReadMem()
-	//		}
-	//	}
-	//}()
-	//prometheus.ReadMem()
-
 	if _var.PrometheusSwitch {
 		// 启动一个系统资源定时任务
 		util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
@@ -122,7 +110,7 @@ func main() {
 	rwg.Wait()
 	xsfcli.DestroyClient(cli)
 	prometheus.Run(_var.PlotFile)
-	fmt.Println("\ncli finish")
+	fmt.Println("\n🚀🚀🚀 cli finish 🚀🚀🚀 ")
 	return
 }
 
