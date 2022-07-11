@@ -70,7 +70,15 @@ func main() {
 		util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
 		go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
 	}
+	if _var.Plot {
+		util.ScheduledTask(time.Microsecond*50, func() {
+			cv, _ := prometheus.MetricValue(_var.CpuPer)
+			mv, _ := prometheus.MetricValue(_var.MemPer)
+			prometheus.GenerateData(cv, mv)
+		})
+	}
 	go util.ProgressShow(_var.LoopCnt)
+
 	for i := 0; i < _var.MultiThr; i++ {
 		wg.Add(1)
 		go func() {
@@ -113,6 +121,7 @@ func main() {
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
 	xsfcli.DestroyClient(cli)
+	prometheus.Run(_var.PlotFile)
 	fmt.Println("\ncli finish")
 	return
 }

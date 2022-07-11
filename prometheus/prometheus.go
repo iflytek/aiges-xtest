@@ -1,11 +1,21 @@
 package prometheus
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
 	utilProcess "github.com/shirou/gopsutil/process"
 	"net/http"
 	"syscall"
+	"time"
+	"xtest/util"
 	_var "xtest/var"
+)
+
+var (
+	times []float64
+	cpus  []float64
+	mems  []float64
 )
 
 func Start() {
@@ -24,8 +34,47 @@ func ReadMem() {
 	_var.MemPer.Set(float64(memPer))
 }
 
+// bToMb bit转Mb
 func bToMb(b uint64) uint64 {
 	return b / 1024 / 1024
+}
+
+// MetricValue 获取metric的Value值
+func MetricValue(m prometheus.Gauge) (float64, error) {
+	metric := dto.Metric{}
+	err := m.Write(&metric)
+	if err != nil {
+		return 0, err
+	}
+	val := metric.Gauge.GetValue()
+	return val, nil
+}
+
+// 获取资源数据绘制折线图
+func GenerateData(cv, mv float64) {
+	times = append(times, float64(time.Now().UnixMicro()))
+	cpus = append(cpus, cv)
+	mems = append(mems, mv)
+}
+
+// 绘制图片
+func Run(dst string) error {
+	c := util.Charts{
+		Vals: util.LinesData{
+			Title: "Resource Record",
+			BarValues: []util.LineYValue{
+				{"cpus", cpus},
+				{"mem", mems},
+			},
+		},
+		Dst:     dst,
+		XValues: times,
+	}
+	err := c.Draw()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //func main() {

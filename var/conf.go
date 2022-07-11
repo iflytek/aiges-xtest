@@ -56,6 +56,8 @@ var (
 	TestSub          string        = "ase"                  // 测试业务sub, 缺省test
 	InputCmd         bool          = false                  // jbzhou5 非会话模式切换为命令行输入
 	PrometheusSwitch bool          = false                  // jbzhou5 Prometheus写入开关
+	Plot             bool          = true                   // jbzhou5 绘制图形开关
+	PlotFile         string        = "./log/line.png"       // jbzhou5 绘制图像保存路径
 	FileSorted       int           = 0                      // jbzhou5 文件排序方式
 	FileNameSeq      string        = "/"                    // 文件名分割方式
 	PerfConfigOn     bool          = false                  //true: 开启性能检测 false: 不开启性能检测
@@ -84,6 +86,8 @@ var (
 	ErrAnaDst = "./log/errDist"
 	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
 
+	// jbzhou5 性能资源日志保存目录
+	// ResourcesDst = "./"
 	// jbzhou5 Prometheus并发协程计数器
 	ConcurrencyCnt = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "Xtest_Concurrency_Go_Routine",
@@ -306,6 +310,16 @@ func secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 Prometheus写入开关
 	if prometheusSwitch, err := conf.GetBool(secTmp, "prometheus_switch"); err == nil {
 		PrometheusSwitch = prometheusSwitch
+	}
+
+	// jbzhou5 资源监控绘图开关
+	if plot, err := conf.GetBool(secTmp, "plot"); err == nil {
+		Plot = plot
+	}
+
+	// jbzhou5 绘图保存路径
+	if plotFile, err := conf.GetString(secTmp, "plot_file"); err == nil {
+		PlotFile = plotFile
 	}
 
 	// jbzhou5 设置读入文件顺序
