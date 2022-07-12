@@ -37,7 +37,6 @@ func ReadDir(fi os.FileInfo, src string, sep string, flag int) ([][]byte, error)
 		return CompFunc(flag, file_index[i], file_index[j])
 	})
 
-	fmt.Println(file_index)
 	for _, k := range file_index {
 		data, err := ioutil.ReadFile(src + "/" + filemap[k])
 		if err != nil {

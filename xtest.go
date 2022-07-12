@@ -55,15 +55,17 @@ func main() {
 	var wg sync.WaitGroup
 	if _var.PrometheusSwitch {
 		// 启动一个系统资源定时任务
-		util.ScheduledTask(time.Microsecond*50, prometheus.ReadMem)
+		util.ScheduledTask(time.Microsecond*50, func() {
+			err := prometheus.ReadMem(_var.ServicePid)
+			if err != nil {
+				return
+			}
+		})
 		go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
 	}
+
 	if _var.Plot {
-		util.ScheduledTask(time.Microsecond*50, func() {
-			cv, _ := prometheus.MetricValue(_var.CpuPer)
-			mv, _ := prometheus.MetricValue(_var.MemPer)
-			prometheus.GenerateData(cv, mv)
-		})
+		util.ScheduledTask(time.Microsecond*50, prometheus.GenerateData)
 	}
 	go util.ProgressShow(_var.LoopCnt)
 
@@ -109,6 +111,7 @@ func main() {
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
 	xsfcli.DestroyClient(cli)
+	util.StopTask()
 	prometheus.Run(_var.PlotFile)
 	fmt.Println("\n🚀🚀🚀 cli finish 🚀🚀🚀 ")
 	return

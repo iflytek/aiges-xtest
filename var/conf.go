@@ -89,7 +89,8 @@ var (
 	// jbzhou5 性能资源日志保存目录
 	// ResourcesDst = "./"
 	// jbzhou5 Prometheus并发协程计数器
-	ConcurrencyCnt = promauto.NewGauge(prometheus.GaugeOpts{
+	ServicePid     int = 0 // jbzhou5 Aiservice的PID号
+	ConcurrencyCnt     = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "Xtest_Concurrency_Go_Routine",
 		Help: "The total number of processed events",
 	})
@@ -302,6 +303,10 @@ func secParseSvc(conf *utils.Configure) error {
 		LinearNs = (linearms * 1000 * 1000) / MultiThr
 	}
 
+	// jbzhou5 监听的AiService PID号
+	if servicePid, err := conf.GetInt(secTmp, "service_pid"); err == nil {
+		ServicePid = servicePid
+	}
 	// jbzhou5 当模式为非会话且配置了cmd输入，才开启手动输入
 	if inputCmd, err := conf.GetBool(secTmp, "inputCmd"); err == nil && ReqMode == 0 {
 		InputCmd = inputCmd

@@ -1,21 +1,26 @@
 package prometheus
 
 import (
+	"errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
 	utilProcess "github.com/shirou/gopsutil/process"
 	"net/http"
-	"syscall"
 	"time"
 	"xtest/util"
 	_var "xtest/var"
 )
 
+type Resource struct {
+	Mem  float64
+	Cpu  float64
+	Time float64
+}
+
 var (
-	times []float64
-	cpus  []float64
-	mems  []float64
+	resourceChan = make(chan Resource, 10000)
+	resources    []Resource
 )
 
 func Start() {
@@ -24,14 +29,29 @@ func Start() {
 	http.ListenAndServe(":2117", server)
 }
 
-// ReadMem 获取内存使用
-func ReadMem() {
-	pid := syscall.Getpid() // 获取xtest的运行id
-	x, _ := utilProcess.NewProcess(int32(pid))
+// ReadMem 获取内存使用, 传入AiService的PID
+func ReadMem(pid int) error {
+	x, err := utilProcess.NewProcess(int32(pid))
+	if err != nil {
+		return errors.New("Pid Not Found! ")
+	}
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
+	resourceChan <- Resource{
+		Mem:  float64(memPer),
+		Cpu:  cpuPer,
+		Time: float64(time.Now().UnixMicro()),
+	}
 	_var.CpuPer.Set(cpuPer)
 	_var.MemPer.Set(float64(memPer))
+	return nil
+}
+
+func GenerateData() {
+	select {
+	case resource := <-resourceChan:
+		resources = append(resources, resource)
+	}
 }
 
 // bToMb bit转Mb
@@ -50,15 +70,17 @@ func MetricValue(m prometheus.Gauge) (float64, error) {
 	return val, nil
 }
 
-// GenerateData 获取资源数据绘制折线图
-func GenerateData(cv, mv float64) {
-	times = append(times, float64(time.Now().UnixMicro()))
-	cpus = append(cpus, cv)
-	mems = append(mems, mv)
-}
-
 // Run 绘制图片
 func Run(dst string) error {
+	n := len(resources)
+	cpus := make([]float64, n)
+	mems := make([]float64, n)
+	times := make([]float64, n)
+	for i, r := range resources {
+		cpus[i] = r.Cpu
+		mems[i] = r.Mem
+		times[i] = r.Time
+	}
 	c := util.Charts{
 		Vals: util.LinesData{
 			Title: "Resource Record",
