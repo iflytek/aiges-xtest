@@ -53,20 +53,26 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+
+	// jbzhou5
+	r := prometheus.NewResources()     // 开启资源监听实例
+	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
 	if _var.PrometheusSwitch {
-		// 启动一个系统资源定时任务
-		util.ScheduledTask(time.Microsecond*50, func() {
-			err := prometheus.ReadMem(_var.ServicePid)
-			if err != nil {
-				return
-			}
-		})
-		go prometheus.Start() // jbzhou5 启动一个协程写入Prometheus
+		go r.Serve() // jbzhou5 启动一个协程写入Prometheus
 	}
 
 	if _var.Plot {
-		util.ScheduledTask(time.Microsecond*50, prometheus.GenerateData)
+		r.GenerateData()
 	}
+
+	// 启动一个系统资源定时任务
+	stp.Start(time.Microsecond*50, func() {
+		err := r.ReadMem(_var.ServicePid)
+		if err != nil {
+			return
+		}
+	})
+
 	go util.ProgressShow(_var.LoopCnt)
 
 	for i := 0; i < _var.MultiThr; i++ {
@@ -111,8 +117,9 @@ func main() {
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
 	xsfcli.DestroyClient(cli)
-	util.StopTask()
-	prometheus.Run(_var.PlotFile)
+	stp.Stop() // 关闭定时任务
+	r.Stop()   // 关闭资源收集
+	r.Draw(_var.PlotFile)
 	fmt.Println("\n🚀🚀🚀 cli finish 🚀🚀🚀 ")
 	return
 }

@@ -1,35 +1,46 @@
 package util
 
 import (
-	"fmt"
+	"sync"
 	"time"
 )
 
-var (
-	TaskNum      = 0
-	TimeStopChan = make(chan int, 100) // 通知定时任务结束协程
-)
+type ScheduledTaskPool struct {
+	Size         int            // 任务个数
+	TimeStopChan chan bool      // // 通知定时任务结束协程
+	wg           sync.WaitGroup // 同步原语
+}
 
-// ScheduledTask 启动一个定时任务 jbzhou5
-func ScheduledTask(d time.Duration, f func()) {
-	TaskNum++
+func NewScheduledTaskPool() ScheduledTaskPool {
+	return ScheduledTaskPool{
+		Size:         0,
+		TimeStopChan: make(chan bool, 100),
+		wg:           sync.WaitGroup{},
+	}
+}
+
+// Start 启动一个定时任务 jbzhou5
+func (stp *ScheduledTaskPool) Start(d time.Duration, f func()) {
+	stp.Size++
+	stp.wg.Add(1)
 	go func() {
 		ticker := time.NewTicker(d)
 		for {
 			select {
 			case <-ticker.C:
 				f()
-			case x := <-TimeStopChan:
-				fmt.Println("关闭咯: ", x)
+			case <-stp.TimeStopChan:
+				stp.wg.Done()
 				return
 			}
 		}
 	}()
 }
 
-// StopTask 结束定时任务
-func StopTask() {
-	for i := 0; i < TaskNum<<1; i++ {
-		TimeStopChan <- i
+// Stop 结束定时任务
+func (stp *ScheduledTaskPool) Stop() {
+	for i := 0; i < stp.Size<<1; i++ {
+		stp.TimeStopChan <- true
 	}
+	stp.wg.Wait()
 }

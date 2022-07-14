@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"xtest/prometheus"
 	_var "xtest/var"
 )
 
@@ -27,8 +26,7 @@ func SigRegister() {
 				_var.LoopCnt.Store(0)
 			case syscall.SIGINT:
 				//_var.LoopCnt.Store(0)
-				mem, _ := prometheus.MetricValue(_var.MemPer)
-				fmt.Println("\n", mem)
+				fmt.Println("\nSIGINT\n")
 				// TODO 可区别于SIGTERM, 当前进行的会话暴力结束,不计入统计数据,防止会话最长时间等待(eg: iat 60s)
 			}
 		}
