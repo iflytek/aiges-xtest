@@ -26,7 +26,7 @@ func Usage() {
 	os.Exit(0)
 }
 
-// jbzhou5 Input data
+// Input jbzhou5 Input data
 func Input(data string) (int, error) {
 	in := bufio.NewReader(os.Stdin)
 	fmt.Print("Please input data: ")

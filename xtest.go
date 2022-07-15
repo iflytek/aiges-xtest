@@ -5,6 +5,7 @@ import (
 	"fmt"
 	xsfcli "git.iflytek.com/AIaaS/xsf/client"
 	"git.iflytek.com/AIaaS/xsf/utils"
+	"github.com/pterm/pterm"
 	"sync"
 	"time"
 	"xtest/analy"
@@ -16,7 +17,6 @@ import (
 
 func main() {
 	flag.Parse()
-
 	// xrpc框架初始化;
 	cli, e := xsfcli.InitClient(_var.CliName, utils.CfgMode(0), utils.WithCfgName(*_var.CmdCfg),
 		utils.WithCfgURL(""), utils.WithCfgPrj(""), utils.WithCfgGroup(""),
@@ -32,12 +32,25 @@ func main() {
 		fmt.Println("cli conf init fail with ", e.Error())
 		return
 	}
+	x := NewXtest(cli)
+	x.Run()
+	return
+}
 
+type Xtest struct {
+	cli *xsfcli.Client
+}
+
+func NewXtest(cli *xsfcli.Client) Xtest {
+	return Xtest{cli}
+}
+
+func (x *Xtest) Run() {
 	// 数据分析初始化、性能数据
-	analy.ErrAnalyser.Start(_var.MultiThr, cli.Log)
+	analy.ErrAnalyser.Start(_var.MultiThr, x.cli.Log)
 	if _var.PerfConfigOn {
 		analy.Perf = new(analy.PerfModule)
-		analy.Perf.Log = cli.Log
+		analy.Perf.Log = x.cli.Log
 		startErr := analy.Perf.Start()
 		if startErr != nil {
 			fmt.Println("failed to open req record file.", startErr.Error())
@@ -49,7 +62,7 @@ func main() {
 	var rwg sync.WaitGroup
 	for i := 0; i < _var.DropThr; i++ {
 		rwg.Add(1)
-		go request.DownStreamWrite(&rwg, cli.Log)
+		go request.DownStreamWrite(&rwg, x.cli.Log)
 	}
 
 	var wg sync.WaitGroup
@@ -85,22 +98,22 @@ func main() {
 				switch _var.ReqMode {
 				case 0:
 					loopIndex := _var.LoopCnt.Load()
-					info := request.OneShotCall(cli, loopIndex)
+					info := request.OneShotCall(x.cli, loopIndex)
 					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 1:
 					loopIndex := _var.LoopCnt.Load()
-					info := request.SessionCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					info := request.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 2:
 					loopIndex := _var.LoopCnt.Load()
-					info := request.TextCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					info := request.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 3:
 					loopIndex := _var.LoopCnt.Load()
-					info := request.FileSessionCall(cli, loopIndex) // loopIndex % len(stream.dataList)
+					info := request.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					_var.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				default:
@@ -116,12 +129,11 @@ func main() {
 	close(_var.AsyncDrop)
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
-	xsfcli.DestroyClient(cli)
+	xsfcli.DestroyClient(x.cli)
 	stp.Stop() // 关闭定时任务
 	r.Stop()   // 关闭资源收集
 	r.Draw(_var.PlotFile)
-	fmt.Println("\n🚀🚀🚀 cli finish 🚀🚀🚀 ")
-	return
+	pterm.DefaultBasicText.Println(pterm.LightGreen("\ncli finish "))
 }
 
 func linearCtl() {
