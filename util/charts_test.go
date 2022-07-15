@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -9,8 +8,8 @@ import (
 func TestCharts_Draw(t *testing.T) {
 	c := Charts{
 		Vals: LinesData{
-			title: "Resource Record",
-			barValues: []LineYValue{{"asd", []float64{1, 2, 300, 100, 200, 6, 700}},
+			Title: "Resource Record",
+			BarValues: []LineYValue{{"asd", []float64{1, 2, 300, 100, 200, 6, 700}},
 				{"hgj", []float64{400, 500000, 200, 50, 5, 800, 7}},
 				{"dfg45r", []float64{1, 2, 700, 100, 200, 6, 700}},
 				{"2342sr", []float64{400, 500000, 200, 50, 5, 800, 7}},
@@ -40,10 +39,9 @@ func TestCharts_Draw(t *testing.T) {
 	}
 
 	for i := 0; i < 7; i++ {
-		c.XValues = append(c.XValues, float64(time.Now().UnixMicro()))
+		c.XValues = append(c.XValues, float64(time.Now().Add(time.Second).Unix())+float64(i))
 	}
 
-	fmt.Println(c.XValues)
 	err := c.Draw()
 	if err != nil {
 		t.Fatal(err)

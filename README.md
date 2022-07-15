@@ -227,7 +227,11 @@
 
 #### Ⅰ. libh264bitstream.so.0
 
-### 2.5、request文件夹
+### 2.5 log 文件夹
+
+### 2.6 prometheus文件夹
+
+### 2.7、request文件夹
 
 #### Ⅰ. fileSession.go
 
@@ -352,7 +356,7 @@
 > }) 
 > ```
 
-### 2.6、script文件夹
+### 2.8、script文件夹
 
 #### Ⅰ. test.sh： 运行脚本
 
@@ -416,19 +420,78 @@
 
 #### Ⅲ. xtest_example.toml文件
 
-### 2.7、testdata文件夹
+### 2.9、testdata文件夹
 
-### 2.8、util文件夹
+### 2.10、util文件夹
 
-#### Ⅰ sid.go：与sid生成有关的函数定义
+#### Ⅰ charts.go： 绘制图表有关的函数定义
+
+```go
+
+const (
+   lineChartXAxisName = "Time"
+   lineChartYAxisName = "Percentage"
+   lineChartHeight    = 700
+   lineChartWidth     = 1280
+   colorMultiplier    = 256
+)
+
+var (
+   lineChartStyle = chart.Style{
+      Padding: chart.Box{
+         Top:  30,
+         Left: 150,
+      },
+   }
+   timeFormat = GetHMS
+)
+
+type Charts struct {
+   Vals    LinesData
+   Dst     string    // 保存文件
+   XValues []float64 // X轴时间戳
+}
+
+type LineYValue struct {
+   Name   string
+   Values []float64
+}
+
+type LinesData struct {
+   Title     string
+   BarValues []LineYValue
+}
+
+// createLineChart 创建线性图
+func (c *Charts) createLineChart(title string, xValues []float64, values []LineYValue) error
+
+// Draw 传入绘制数据，绘制条形图
+func (c *Charts) Draw() error 
+// GetHMS 格式化时间获取时分秒
+func GetHMS(v interface{}) string
+
+// getNsec 获取纳秒数
+func getNsec(cur time.Time) float64 
+```
+
+#### Ⅱ file.go: 与文件读取有关的函数定义
+
+```go
+func ReadDir(fi os.FileInfo, src string, sep string, flag int) ([][]byte, error) 
+func CompFunc(flag int, i, j string) bool
+```
+
+#### Ⅲ ptermShow.go： 与进度条有关的函数定义
+
+#### Ⅳ sid.go：与sid生成有关的函数定义
 
 > ```go
 > var (
->     index        int64  = 0		// 生成的SID索引
->     Location     string = "dx"
->     LocalIP      string 			// 本地IP
->     ShortLocalIP string			// 本地短IP
->     Port         string			// 端口
+>  index        int64  = 0		// 生成的SID索引
+>  Location     string = "dx"
+>  LocalIP      string 			// 本地IP
+>  ShortLocalIP string			// 本地短IP
+>  Port         string			// 端口
 > )
 > // 获取本地ip地址与短地址ip
 > func init() 
@@ -436,7 +499,9 @@
 > func NewSid(sub string) string 
 > ```
 
-### 2.9、var文件夹
+#### Ⅴ task.go： 与定时任务有关的函数定义
+
+### 2.11、var文件夹
 
 #### Ⅰ. cmd.go：命令行输入相关
 
@@ -453,21 +518,6 @@
 #### Ⅱ. conf.go：xtest配置相关定义和函数
 
 > ```go
-> package _var
-> 
-> import (
-> 	"errors"
-> 	"fmt"
-> 	"git.iflytek.com/AIaaS/xsf/utils"
-> 	"go.uber.org/atomic"
-> 	"io/ioutil"
-> 	"os"
-> 	"protocol"
-> 	"reflect"
-> 	"strconv"
-> 	"strings"
-> )
-> 
 > const (
 > 	CliName = "xtest"
 > 	CliVer  = "2.0.1"
@@ -566,7 +616,7 @@
     - [x] 单一文件按照固定长度输入
     - [ ] 文本文件按行读取 √  优化代码
     - [ ] 多个文件，每个文件一帧输入
-        - [ ] 文件有序 √ 优化代码
+        - [x] 文件有序 √ 优化代码
         - [x] 文件无序：Shuffle √ 实现功能
 
 ### 3.2 性能需求
@@ -594,4 +644,86 @@
 
 todolist:
 
-- [ ] 渲染本地数据到图片
+- [x] 渲染本地数据到图片
+## 五、配置说明
+
+### 5.1 样例配置
+
+```toml
+[xtest]
+taddrs="AIservice@127.0.0.1:5090"
+trace-ip = "172.16.51.13"
+
+[svcMode]
+service = "AIservice"           # 请求目标服务名称, eg:sms
+svcId = "s12345678"             # 服务id
+timeout = 1000                  # 服务超时时间, 对应服务端waitTime
+multiThr = 100                  # 请求并发数
+loopCnt = 100000                # 请求总次数
+sessMode = 0                    # 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
+linearMs = 5000                 # 并发压测线性增长区间,单位:ms
+perfOn=true                     # 是否开启性能测试
+perfLevel=0                     # 非会话模式默认0
+                                # 会话模式0: 从发第一帧到最后一帧的性能
+                                # 会话模式1:首结果(发送第一帧到最后一帧的性能)
+                                # 会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
+service_pid = 130				# AiService 的PID号
+inputCmd = false 				# 切换为命令行输入，仅在非会话模式生效
+prometheus_switch = true  		# Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
+plot = true  					# 绘制资源图， 默认开启
+plot_file = "./log/line.png"    # 绘制图形保存路径
+file_sorted = 0  				# 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
+file_name_seq = "_" 			# 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
+[header]
+"appid" = "100IME"
+"uid" = "1234567890"
+
+[parameter]
+"key" = 2
+"x" = 1
+
+[data]
+payload = "dataKey2"   			# 输入数据流配置段,多个数据流以";"分割， 如果开启了inputCmd， 该值会被清空
+expect = "dataKey3"             # 输出数据流配置段,多个数据流以";"分割
+
+[dataKey1]  # 输入数据流dataKey1描述
+inputSrc = "path"               # 上行数据流数据源, 配置文件路径(配置为目录则循环读取目录中文件)
+sliceOn = false                 # 切片开关, false:关闭切换, true:开启切片
+sliceSize = 1280                # 上行数据切片大小,用于会话模式: byte
+interval = 40                   # 上行数据发包间隔,用于会话模式: ms. 注：动态校准,每个包间隔非严格interval
+name = "input1"                 # 输入数据流key值
+type = "image"                  # 数据类型，支持"audio","text","image","video"
+describe = "k1=v1;k2=v2"        # 数据描述信息,多个描述信息以";"分割
+                                # 图像支持如下属性："encoding", 如"encoding=jpg"
+[dataKey2]
+inputSrc = "./testdata/text2"   # 上行数据流数据源, 配置文件路径(配置为目录则循环读取目录中文件)
+sliceOn = false                 # 切片开关, false:关闭切换, true:开启切片
+sliceSize = 1280                # 上行数据切片大小,用于会话模式: byte
+interval = 40                   # 上行数据发包间隔,用于会话模式: ms. 注：动态校准,每个包间隔非严格interval
+name = "input2"                 # 输入数据流key值
+type = "text"                  	# 数据类型，支持"audio","text","image","video"
+describe = "encoding=utf8"      # 数据描述信息,多个描述信息以";"分割
+                                # 图像支持如下属性："encoding", 如"encoding=jpg"
+[dataKey3]
+name = "result"                 # 输入数据流key值
+type = "text"                   # 输出数据类型，支持"audio","text","image","video"
+describe = "k1=v1;k2=v2"        # 数据描述信息,多个描述信息以";"分割
+                                # 文本支持如下属性："encoding","compress", 如"encoding=utf8;compress=gzip"
+
+
+[downstream]                    # 下行数据流存储输出
+output = 0                      # 输出方式： 0:输出至公共文件outputDst 1:以独立文件形式输出至目录outputDst(文件名:sid+**) 2：输出至终端
+outputDst = "./log/result"      # 响应数据输出目标, 若output=0则配置目录, output=1则配置文件
+
+
+[log]
+file = "./log/xtest.log"        # 日志文件名
+level = "debug"                 # 日志打印等级
+size = 100                      # 日志文件大小
+count = 20                      # 日志备份数量
+async = 0                       # 异步开关
+die = 30
+
+[trace]
+able = 0
+```

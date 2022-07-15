@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 )
 
 // ReadDir 读取文件夹文件
-func ReadDir(fi os.FileInfo, src string, sep string, flag int) ([][]byte, error) {
+func ReadDir(src string, sep string, flag int) ([][]byte, error) {
 	// 遍历目录文件
 	ans := [][]byte{}
 	files, err := ioutil.ReadDir(src)

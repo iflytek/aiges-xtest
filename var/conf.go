@@ -222,7 +222,7 @@ func secParsePl(conf *utils.Configure) error {
 		}
 
 		if fi.IsDir() {
-			data, err := util.ReadDir(fi, meta.DataSrc, FileNameSeq, FileSorted)
+			data, err := util.ReadDir(meta.DataSrc, FileNameSeq, FileSorted)
 			if err != nil {
 				return err
 			}
