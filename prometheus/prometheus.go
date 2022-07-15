@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 	"xtest/util"
-	_var "xtest/var"
 )
 
 type Resource struct {
@@ -55,9 +54,8 @@ func (rs *Resources) ReadMem(pid int) error {
 		Cpu:  cpuPer,
 		Time: float64(time.Now().UnixMicro()),
 	}
-	//fmt.Println(cpuPer, memPer)
-	_var.CpuPer.Set(cpuPer)
-	_var.MemPer.Set(float64(memPer))
+	//_var.CpuPer.Set(cpuPer)
+	//_var.MemPer.Set(float64(memPer))
 	return nil
 }
 

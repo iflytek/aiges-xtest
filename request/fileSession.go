@@ -14,27 +14,27 @@ import (
 	_var "xtest/var"
 )
 
-func FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
+func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	// 下行结果缓存
 
 	// go routine 区分不同frame slice数据流
 	var thrRslt []protocol.LoaderOutput = make([]protocol.LoaderOutput, 0, 1)
 	var thrLock sync.Mutex
-	reqSid := util.NewSid(_var.TestSub)
-	hdl, status, info := FilesessAIIn(cli, index, &thrRslt, &thrLock, reqSid)
+	reqSid := util.NewSid(r.C.TestSub)
+	hdl, status, info := r.FilesessAIIn(cli, index, &thrRslt, &thrLock, reqSid)
 	if info.ErrStr != nil {
 		if len(hdl) != 0 {
-			_ = FilesessAIExcp(cli, hdl, reqSid)
+			_ = r.FilesessAIExcp(cli, hdl, reqSid)
 			return
 		}
 	} else if status != protocol.LoaderOutput_END {
-		info = FilesessAIOut(cli, hdl, reqSid, &thrRslt)
+		info = r.FilesessAIOut(cli, hdl, reqSid, &thrRslt)
 		if info.ErrStr != nil {
-			_ = FilesessAIExcp(cli, hdl, reqSid)
+			_ = r.FilesessAIExcp(cli, hdl, reqSid)
 			return info
 		}
 	}
-	_ = FilesessAIExcp(cli, hdl, reqSid)
+	_ = r.FilesessAIExcp(cli, hdl, reqSid)
 	// 结果落盘
 	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
 	for k, _ := range thrRslt {
@@ -62,45 +62,45 @@ func FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 		}
 
 		select {
-		case _var.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
 			key := reqSid + "-" + outType + "-" + v.Meta.Name
-			downOutput(key, v.Data, cli.Log)
+			r.downOutput(key, v.Data, cli.Log)
 		}
 	}
 	return
 }
 
-func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) {
+func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) {
 	// jbzhou5 并行网络协程监听
-	_var.ConcurrencyCnt.Add(1)
-	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Add(1)
+	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	// request构包；构造首包SeqNo=1,同加载器建立会话上下文信息; 故首帧不携带具体数据
 	req := xsfcli.NewReq()
 	req.SetParam("SeqNo", "1")
 	req.SetParam("baseId", "0")
 	req.SetParam("version", "v2")
-	req.SetParam("waitTime", strconv.Itoa(_var.TimeOut))
+	req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
 	dataIn := protocol.LoaderInput{}
 	dataIn.State = protocol.LoaderInput_STREAM
-	dataIn.ServiceId = _var.SvcId
-	dataIn.ServiceName = _var.SvcName
+	dataIn.ServiceId = r.C.SvcId
+	dataIn.ServiceName = r.C.SvcName
 	// 平台参数header
 	dataIn.Headers = make(map[string]string)
 	dataIn.Headers["sid"] = reqSid
 	dataIn.Headers["status"] = "0"
-	for k, v := range _var.Header {
+	for k, v := range r.C.Header {
 		dataIn.Headers[k] = v
 	}
 	// 能力参数params
 	dataIn.Params = make(map[string]string)
-	for k, v := range _var.Params {
+	for k, v := range r.C.Params {
 		dataIn.Params[k] = v
 	}
 	// 期望输出expect
-	for k, _ := range _var.DownExpect {
-		dataIn.Expect = append(dataIn.Expect, &_var.DownExpect[k])
+	for k, _ := range r.C.DownExpect {
+		dataIn.Expect = append(dataIn.Expect, &r.C.DownExpect[k])
 	}
 
 	input, err := proto.Marshal(&dataIn)
@@ -115,7 +115,7 @@ func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOu
 
 	caller := xsfcli.NewCaller(cli)
 	analy.Perf.Record(reqSid, "", analy.DataBegin, analy.SessBegin, analy.UP, 0, "")
-	resp, ecode, err := caller.SessionCall(xsfcli.CREATE, _var.SvcName, "AIIn", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
+	resp, ecode, err := caller.SessionCall(xsfcli.CREATE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 	if err != nil {
 		cli.Log.Errorw("sessAIIn Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
 		analy.Perf.Record(reqSid, resp.Handle(), analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
@@ -131,7 +131,7 @@ func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOu
 	defer close(errChan)
 	var rwg sync.WaitGroup
 
-	FilemultiUpStream(cli, &rwg, hdl, thrRslt, thrLock, errChan)
+	r.FilemultiUpStream(cli, &rwg, hdl, thrRslt, thrLock, errChan)
 
 	rwg.Wait() // 异步协程上行数据交互结束
 	select {
@@ -148,36 +148,36 @@ func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOu
 	return
 }
 
-func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
+func (r *Request) FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
 	// jbzhou5 并行网络协程监听
-	_var.ConcurrencyCnt.Add(1)
-	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Add(1)
+	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 
-	for dataId := 1; dataId <= len(_var.UpStreams[0].DataList); dataId++ {
+	for dataId := 1; dataId <= len(r.C.UpStreams[0].DataList); dataId++ {
 
 		println("send data ")
 
-		sendData := _var.UpStreams[0].DataList[dataId-1]
+		sendData := r.C.UpStreams[0].DataList[dataId-1]
 		sTime := time.Now()
 
 		req := xsfcli.NewReq()
 		req.SetParam("baseId", "0")
 		req.SetParam("version", "v2")
-		req.SetParam("waitTime", strconv.Itoa(_var.TimeOut))
+		req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
 		_ = req.Session(session)
 		dataIn := protocol.LoaderInput{}
 		dataIn.SyncId = int32(dataId)
 		upStatus := protocol.EngInputData_CONTINUE
-		if dataId == len(_var.UpStreams[0].DataList) {
+		if dataId == len(r.C.UpStreams[0].DataList) {
 			upStatus = protocol.EngInputData_END
 		}
 		desc := make(map[string]string)
-		for dk, dv := range _var.UpStreams[0].DataDesc {
+		for dk, dv := range r.C.UpStreams[0].DataDesc {
 			desc[dk] = dv
 		}
 		md := protocol.MetaDesc{
-			Name:      _var.UpStreams[0].Name,
-			DataType:  _var.UpStreams[0].DataType,
+			Name:      r.C.UpStreams[0].Name,
+			DataType:  r.C.UpStreams[0].DataType,
 			Attribute: desc}
 		md.Attribute["seq"] = strconv.Itoa(dataId)
 		md.Attribute["status"] = strconv.Itoa(int(upStatus))
@@ -186,7 +186,7 @@ func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, 
 		input, err := proto.Marshal(&dataIn)
 		if err != nil {
 			cli.Log.Errorw("multiUpStream marshal create request fail", "err", err.Error(), "params", dataIn.Params)
-			FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
+			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
 			return
 		}
 
@@ -197,10 +197,10 @@ func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, 
 
 		analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.UP, 0, "")
 
-		resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, _var.SvcName, "AIIn", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
+		resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 		if err != nil && ecode != frame.AigesErrorEngInactive {
 			cli.Log.Errorw("multiUpStream Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
-			FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err})
+			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err})
 			analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(ecode), err.Error())
 			return
 		}
@@ -209,7 +209,7 @@ func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, 
 		err = proto.Unmarshal(resp.GetData()[0].Data, &dataOut)
 		if err != nil {
 			cli.Log.Errorw("multiUpStream Resp Unmarshal fail", "err", err.Error(), "respData", resp.GetData()[0].Data)
-			FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
+			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
 			return
 		}
 
@@ -219,7 +219,7 @@ func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, 
 			return
 		default:
 			cli.Log.Errorw("multiUpStream get engine err", "err", dataOut.Err, "code", dataOut.Code, "params", dataIn.Params)
-			FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)})
+			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)})
 			analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(dataOut.Code), dataOut.Err)
 			return // engine err but not 10101
 		}
@@ -237,13 +237,13 @@ func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, 
 		}
 
 		// wait ms.动态调整校准上行数据实时率, 考虑其他接口耗时.
-		FilertCalibration(dataId, _var.UpStreams[0].UpInterval, sTime)
+		r.FilertCalibration(dataId, r.C.UpStreams[0].UpInterval, sTime)
 	}
 
 }
 
 // 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
-func FilertCalibration(curReq int, interval int, sTime time.Time) {
+func (r *Request) FilertCalibration(curReq int, interval int, sTime time.Time) {
 	cTime := int(time.Now().Sub(sTime).Nanoseconds() / (1000 * 1000)) // ssb至今绝对时长.ms
 	expect := interval * (curReq + 1)                                 // 期望发包时间
 	if expect > cTime {
@@ -252,16 +252,16 @@ func FilertCalibration(curReq int, interval int, sTime time.Time) {
 }
 
 // downStream 下行调用单线程;
-func FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) {
+func (r *Request) FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) {
 	// jbzhou5 并行网络协程监听
-	_var.ConcurrencyCnt.Add(1)
-	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Add(1)
+	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	// loop read downstream result
 	for {
 		req := xsfcli.NewReq()
 		req.SetParam("baseId", "0")
 		req.SetParam("version", "v2")
-		req.SetParam("waitTime", strconv.Itoa(_var.TimeOut))
+		req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
 		_ = req.Session(sid)
 		dataIn := protocol.LoaderInput{}
 
@@ -277,7 +277,7 @@ func FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.
 		_ = req.Session(hdl)
 
 		caller := xsfcli.NewCaller(cli)
-		resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, _var.SvcName, "AIOut", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
+		resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, r.C.SvcName, "AIOut", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 		if err != nil {
 			cli.Log.Errorw("sessAIOut request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
 			if ecode == frame.AigesErrorEngInactive { // reset 10101 inactive
@@ -307,13 +307,13 @@ func FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.
 	return
 }
 
-func FilesessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
+func (r *Request) FilesessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
 	// jbzhou5 并行网络协程监听
-	_var.ConcurrencyCnt.Add(1)
-	defer _var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Add(1)
+	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	req := xsfcli.NewReq()
 	req.SetParam("baseId", "0")
-	req.SetParam("waitTime", strconv.Itoa(_var.TimeOut))
+	req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
 	dataIn := protocol.LoaderInput{}
 	input, err := proto.Marshal(&dataIn)
 	if err != nil {
@@ -327,12 +327,12 @@ func FilesessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
 	_ = req.Session(hdl)
 
 	caller := xsfcli.NewCaller(cli)
-	_, _, err = caller.SessionCall(xsfcli.CONTINUE, _var.SvcName, "AIExcp", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
+	_, _, err = caller.SessionCall(xsfcli.CONTINUE, r.C.SvcName, "AIExcp", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 	return
 }
 
 // upStream first error
-func FileunBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo) {
+func (r *Request) FileunBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo) {
 	select {
 	case ch <- err:
 	default:

@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	_var "xtest/var"
 )
 
 /*
@@ -29,6 +28,8 @@ type errDistAnalyser struct {
 	errChan  chan ErrInfo // error
 	swg      sync.WaitGroup
 	log      *utils.Logger
+
+	ErrAnaDst string
 }
 
 func (eda *errDistAnalyser) Start(clen int, logger *utils.Logger) {
@@ -85,9 +86,9 @@ func (eda *errDistAnalyser) count() {
 
 func (eda *errDistAnalyser) dumpLog() {
 	// 错误分布数据落盘;
-	fi, err := os.OpenFile(_var.ErrAnaDst, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+	fi, err := os.OpenFile(eda.ErrAnaDst, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
 	if err != nil {
-		eda.log.Errorw("error dist Log dump fail with open file", "err", err.Error(), "file", _var.ErrAnaDst)
+		eda.log.Errorw("error dist Log dump fail with open file", "err", err.Error(), "file", eda.ErrAnaDst)
 		return
 	}
 	//delete(eda.errCnt, 0)

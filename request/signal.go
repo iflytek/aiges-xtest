@@ -5,15 +5,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	_var "xtest/var"
 )
 
-func init() {
-	SigRegister()
-}
-
 // SigRegister 用于优雅退出测试
-func SigRegister() {
+func (r *Request) SigRegister() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
@@ -23,7 +18,7 @@ func SigRegister() {
 			switch sig {
 			case syscall.SIGTERM:
 				// 当前正在进行的请求或会话持续请求至正常结束, 剩余请求清零
-				_var.LoopCnt.Store(0)
+				r.C.LoopCnt.Store(0)
 			case syscall.SIGINT:
 				//_var.LoopCnt.Store(0)
 				fmt.Println("\nSIGINT\n")

@@ -27,28 +27,30 @@ func main() {
 	}
 
 	// cli配置初始化;
-	e = _var.ConfInit(cli.Cfg())
+	conf := _var.NewConf()
+	e = conf.ConfInit(cli.Cfg())
 	if e != nil {
 		fmt.Println("cli conf init fail with ", e.Error())
 		return
 	}
-	x := NewXtest(cli)
+	x := NewXtest(cli, conf)
 	x.Run()
 	return
 }
 
 type Xtest struct {
+	r   request.Request
 	cli *xsfcli.Client
 }
 
-func NewXtest(cli *xsfcli.Client) Xtest {
-	return Xtest{cli}
+func NewXtest(cli *xsfcli.Client, conf _var.Conf) Xtest {
+	return Xtest{r: request.Request{C: conf}, cli: cli}
 }
 
 func (x *Xtest) Run() {
 	// 数据分析初始化、性能数据
-	analy.ErrAnalyser.Start(_var.MultiThr, x.cli.Log)
-	if _var.PerfConfigOn {
+	analy.ErrAnalyser.Start(x.r.C.MultiThr, x.cli.Log)
+	if x.r.C.PerfConfigOn {
 		analy.Perf = new(analy.PerfModule)
 		analy.Perf.Log = x.cli.Log
 		startErr := analy.Perf.Start()
@@ -60,9 +62,9 @@ func (x *Xtest) Run() {
 	}
 	// 启动异步输出打印&落盘
 	var rwg sync.WaitGroup
-	for i := 0; i < _var.DropThr; i++ {
+	for i := 0; i < x.r.C.DropThr; i++ {
 		rwg.Add(1)
-		go request.DownStreamWrite(&rwg, x.cli.Log)
+		go x.r.DownStreamWrite(&rwg, x.cli.Log)
 	}
 
 	var wg sync.WaitGroup
@@ -70,51 +72,51 @@ func (x *Xtest) Run() {
 	// jbzhou5
 	r := prometheus.NewResources()     // 开启资源监听实例
 	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
-	if _var.PrometheusSwitch {
+	if x.r.C.PrometheusSwitch {
 		go r.Serve() // jbzhou5 启动一个协程写入Prometheus
 	}
 
-	if _var.Plot {
+	if x.r.C.Plot {
 		r.GenerateData()
 	}
 
 	// 启动一个系统资源定时任务
 	stp.Start(time.Microsecond*50, func() {
-		err := r.ReadMem(_var.ServicePid)
+		err := r.ReadMem(x.r.C.ServicePid)
 		if err != nil {
 			return
 		}
 	})
 
-	go util.ProgressShow(_var.LoopCnt)
+	go util.ProgressShow(x.r.C.LoopCnt)
 
-	for i := 0; i < _var.MultiThr; i++ {
+	for i := 0; i < x.r.C.MultiThr; i++ {
 		wg.Add(1)
 		go func() {
 			for {
-				if _var.LoopCnt.Load() <= 0 {
+				if x.r.C.LoopCnt.Load() <= 0 {
 					break
 				}
-				switch _var.ReqMode {
+				switch x.r.C.ReqMode {
 				case 0:
-					loopIndex := _var.LoopCnt.Load()
-					info := request.OneShotCall(x.cli, loopIndex)
-					_var.LoopCnt.Dec()
+					loopIndex := x.r.C.LoopCnt.Load()
+					info := x.r.OneShotCall(x.cli, loopIndex)
+					x.r.C.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 1:
-					loopIndex := _var.LoopCnt.Load()
-					info := request.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
-					_var.LoopCnt.Dec()
+					loopIndex := x.r.C.LoopCnt.Load()
+					info := x.r.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
+					x.r.C.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 2:
-					loopIndex := _var.LoopCnt.Load()
-					info := request.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
-					_var.LoopCnt.Dec()
+					loopIndex := x.r.C.LoopCnt.Load()
+					info := x.r.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
+					x.r.C.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				case 3:
-					loopIndex := _var.LoopCnt.Load()
-					info := request.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
-					_var.LoopCnt.Dec()
+					loopIndex := x.r.C.LoopCnt.Load()
+					info := x.r.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
+					x.r.C.LoopCnt.Dec()
 					analy.ErrAnalyser.PushErr(info)
 				default:
 					println("Unsupported Mode!")
@@ -122,22 +124,22 @@ func (x *Xtest) Run() {
 			}
 			wg.Done()
 		}()
-		linearCtl() // 并发线性增长控制,防止瞬时并发请求冲击
+		x.linearCtl() // 并发线性增长控制,防止瞬时并发请求冲击
 	}
 	wg.Wait()
 	// 关闭异步落盘协程&wait
-	close(_var.AsyncDrop)
+	close(x.r.C.AsyncDrop)
 	analy.ErrAnalyser.Stop()
 	rwg.Wait()
 	xsfcli.DestroyClient(x.cli)
 	stp.Stop() // 关闭定时任务
 	r.Stop()   // 关闭资源收集
-	r.Draw(_var.PlotFile)
+	r.Draw(x.r.C.PlotFile)
 	pterm.DefaultBasicText.Println(pterm.LightGreen("\ncli finish "))
 }
 
-func linearCtl() {
-	if _var.LinearNs > 0 {
-		time.Sleep(time.Duration(time.Nanosecond) * time.Duration(_var.LinearNs))
+func (x *Xtest) linearCtl() {
+	if x.r.C.LinearNs > 0 {
+		time.Sleep(time.Duration(time.Nanosecond) * time.Duration(x.r.C.LinearNs))
 	}
 }

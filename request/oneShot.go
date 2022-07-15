@@ -11,36 +11,36 @@ import (
 	_var "xtest/var"
 )
 
-func OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
+func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	// request构包, 通过oneShot方式请求AIIn方法.
-	sessId := util.NewSid(_var.TestSub)
+	sessId := util.NewSid(r.C.TestSub)
 	req := xsfcli.NewReq()
 	req.SetParam("SeqNo", "1") // 相关协议约定;
 	req.SetParam("baseId", "0")
 	req.SetParam("version", "v2")
-	req.SetParam("waitTime", strconv.Itoa(_var.TimeOut))
+	req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
 	dataIn := protocol.LoaderInput{}
 	dataIn.State = protocol.LoaderInput_ONCE
-	dataIn.ServiceId = _var.SvcId
-	dataIn.ServiceName = _var.SvcName
+	dataIn.ServiceId = r.C.SvcId
+	dataIn.ServiceName = r.C.SvcName
 	// 平台参数header
 	dataIn.Headers = make(map[string]string)
 	dataIn.Headers["sid"] = sessId
 	dataIn.Headers["status"] = "3"
-	for k, v := range _var.Header {
+	for k, v := range r.C.Header {
 		dataIn.Headers[k] = v
 	}
 	// 能力参数params
 	dataIn.Params = make(map[string]string)
-	for k, v := range _var.Params {
+	for k, v := range r.C.Params {
 		dataIn.Params[k] = v
 	}
 	// 期望输出expect
-	for k, _ := range _var.DownExpect {
-		dataIn.Expect = append(dataIn.Expect, &_var.DownExpect[k])
+	for k, _ := range r.C.DownExpect {
+		dataIn.Expect = append(dataIn.Expect, &r.C.DownExpect[k])
 	}
 	// 上行数据payload
-	for _, v := range _var.UpStreams {
+	for _, v := range r.C.UpStreams {
 		streamIndex := index % int64(len(v.DataList))
 		desc := protocol.MetaDesc{Name: v.Name, DataType: v.DataType}
 		desc.Attribute = make(map[string]string)
@@ -68,9 +68,9 @@ func OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	caller := xsfcli.NewCaller(cli)
 
 	analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.UP, 0, "")
-	_var.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
-	resp, code, err := caller.SessionCall(xsfcli.ONESHORT, _var.SvcName, "AIIn", req, time.Duration(_var.TimeOut+_var.LossDeviation)*time.Millisecond)
-	_var.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
+	resp, code, err := caller.SessionCall(xsfcli.ONESHORT, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
+	r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	if err != nil {
 		cli.Log.Errorw("OneShotCall request fail", "err", err.Error(), "code", code,
 			"header", dataIn.Headers, "params", dataIn.Params)
@@ -102,12 +102,12 @@ func OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 			outType = "video"
 		}
 		select {
-		case _var.AsyncDrop <- _var.OutputMeta{v.Meta.Name, sessId,
+		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, sessId,
 			outType, v.Meta.Attribute, v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-name, value: data
 			key := sessId + "-" + outType + "-" + v.Meta.Name
-			downOutput(key, v.Data, cli.Log)
+			r.downOutput(key, v.Data, cli.Log)
 		}
 	}
 
