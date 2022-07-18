@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	xsfcli "git.iflytek.com/AIaaS/xsf/client"
 	"git.iflytek.com/AIaaS/xsf/utils"
@@ -16,9 +15,13 @@ import (
 )
 
 func main() {
-	flag.Parse()
+	f := _var.NewFlag()
+	f.Parse()
+	//if *f.XTestVersion {
+	//	fmt.Println("2.5.2")
+	//}
 	// xrpc框架初始化;
-	cli, e := xsfcli.InitClient(_var.CliName, utils.CfgMode(0), utils.WithCfgName(*_var.CmdCfg),
+	cli, e := xsfcli.InitClient(_var.CliName, utils.CfgMode(0), utils.WithCfgName(*f.CmdCfg),
 		utils.WithCfgURL(""), utils.WithCfgPrj(""), utils.WithCfgGroup(""),
 		utils.WithCfgService(""), utils.WithCfgVersion(""))
 	if e != nil {
@@ -33,6 +36,7 @@ func main() {
 		fmt.Println("cli conf init fail with ", e.Error())
 		return
 	}
+	//fmt.Printf("%+v\n", conf)
 	x := NewXtest(cli, conf)
 	x.Run()
 	return
@@ -94,29 +98,26 @@ func (x *Xtest) Run() {
 		wg.Add(1)
 		go func() {
 			for {
+				loopIndex := x.r.C.LoopCnt.Load()
 				if x.r.C.LoopCnt.Load() <= 0 {
 					break
 				}
 				switch x.r.C.ReqMode {
 				case 0:
-					loopIndex := x.r.C.LoopCnt.Load()
-					info := x.r.OneShotCall(x.cli, loopIndex)
 					x.r.C.LoopCnt.Dec()
+					info := x.r.OneShotCall(x.cli, loopIndex)
 					analy.ErrAnalyser.PushErr(info)
 				case 1:
-					loopIndex := x.r.C.LoopCnt.Load()
-					info := x.r.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					x.r.C.LoopCnt.Dec()
+					info := x.r.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				case 2:
-					loopIndex := x.r.C.LoopCnt.Load()
-					info := x.r.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					x.r.C.LoopCnt.Dec()
+					info := x.r.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				case 3:
-					loopIndex := x.r.C.LoopCnt.Load()
-					info := x.r.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					x.r.C.LoopCnt.Dec()
+					info := x.r.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				default:
 					println("Unsupported Mode!")

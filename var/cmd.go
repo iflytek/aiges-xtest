@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-var (
+type Flag struct {
 	/*	CmdMode		= xsf.Mode				// -m
 		CmdCfg		= xsf.Cfg				// -c
 		CmdProject	= xsf.Project			// -p
@@ -16,9 +16,32 @@ var (
 		CmdCompanionUrl = xsf.CompanionUrl	// -u
 	*/
 	// default 缺省配置模式为native
-	CmdCfg       = flag.String("f", "xtest.toml", "client cfg name")
-	XTestVersion = flag.String("v", "2.5.2", "xtest version")
-)
+	CmdCfg       *string
+	XTestVersion *bool
+}
+
+func NewFlag() Flag {
+	return Flag{
+		CmdCfg:       flag.String("f", "xtest.toml", "client cfg name"),
+		XTestVersion: flag.Bool("v", false, "xtest version"),
+	}
+}
+
+func (f *Flag) Parse()  {
+	flag.Parse()
+}
+//var (
+//	/*	CmdMode		= xsf.Mode				// -m
+//		CmdCfg		= xsf.Cfg				// -c
+//		CmdProject	= xsf.Project			// -p
+//		CmdGroup	= xsf.Group				// -g
+//		CmdService	= xsf.Service			// -s
+//		CmdCompanionUrl = xsf.CompanionUrl	// -u
+//	*/
+//	// default 缺省配置模式为native
+//	CmdCfg       = flag.String("f", "xtest.toml", "client cfg name")
+//	XTestVersion = flag.Bool("v", false, "xtest version")
+//)
 
 func Usage() {
 	fmt.Println("usage of common test tool")

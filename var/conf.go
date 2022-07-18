@@ -263,6 +263,11 @@ func (c *Conf) ConfInit(conf *utils.Configure) error {
 	return nil
 }
 
+// XXX jbzhou5 解析命令行参数到Conf
+func (c *Conf) XXX()  {
+
+}
+
 func (c *Conf) secParseEp(conf *utils.Configure) error {
 	for _, sec := range c.Expect {
 		meta := protocol.MetaDesc{}
