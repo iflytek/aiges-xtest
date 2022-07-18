@@ -99,24 +99,23 @@ func (x *Xtest) Run() {
 		go func() {
 			for {
 				loopIndex := x.r.C.LoopCnt.Load()
-				if x.r.C.LoopCnt.Load() <= 0 {
+				x.r.C.LoopCnt.Dec()
+				if x.r.C.LoopCnt.Load() < 0 {
 					break
 				}
+
+
 				switch x.r.C.ReqMode {
 				case 0:
-					x.r.C.LoopCnt.Dec()
 					info := x.r.OneShotCall(x.cli, loopIndex)
 					analy.ErrAnalyser.PushErr(info)
 				case 1:
-					x.r.C.LoopCnt.Dec()
 					info := x.r.SessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				case 2:
-					x.r.C.LoopCnt.Dec()
 					info := x.r.TextCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				case 3:
-					x.r.C.LoopCnt.Dec()
 					info := x.r.FileSessionCall(x.cli, loopIndex) // loopIndex % len(stream.dataList)
 					analy.ErrAnalyser.PushErr(info)
 				default:
