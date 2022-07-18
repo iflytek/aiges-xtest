@@ -53,7 +53,7 @@ func NewXtest(cli *xsfcli.Client, conf _var.Conf) Xtest {
 
 func (x *Xtest) Run() {
 	// 数据分析初始化、性能数据
-	analy.ErrAnalyser.Start(x.r.C.MultiThr, x.cli.Log)
+	analy.ErrAnalyser.Start(x.r.C.MultiThr, x.cli.Log, x.r.C.ErrAnaDst)
 	if x.r.C.PerfConfigOn {
 		analy.Perf = new(analy.PerfModule)
 		analy.Perf.Log = x.cli.Log
@@ -92,7 +92,7 @@ func (x *Xtest) Run() {
 		}
 	})
 
-	go util.ProgressShow(x.r.C.LoopCnt)
+	go util.ProgressShow(x.r.C.LoopCnt, x.r.C.LoopCnt.Load())
 
 	for i := 0; i < x.r.C.MultiThr; i++ {
 		wg.Add(1)

@@ -32,12 +32,13 @@ type errDistAnalyser struct {
 	ErrAnaDst string
 }
 
-func (eda *errDistAnalyser) Start(clen int, logger *utils.Logger) {
+func (eda *errDistAnalyser) Start(clen int, logger *utils.Logger, errAnaDst string) {
 	eda.log = logger
 	eda.errCnt = make(map[int]int64)
 	eda.errDsc = make(map[int]error)
 	eda.errTmp = make([]ErrInfo, 0, 10)
 	eda.errChan = make(chan ErrInfo, clen)
+	eda.ErrAnaDst = errAnaDst
 	eda.swg.Add(1)
 	go eda.count()
 }
