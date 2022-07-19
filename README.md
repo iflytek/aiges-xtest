@@ -25,7 +25,7 @@
 > // Run 启动测试流程
 > func (x *Xtest) Run()
 > // linearCtl 函数负责并发线性增长控制,防止瞬时并发请求冲击
-> func linearCtl()
+> func (x *Xtest) linearCtl()
 > ```
 
 ### 2.2、analy文件夹
@@ -623,7 +623,8 @@ func CompFunc(flag int, i, j string) bool
 >	TestSub          string        // 测试业务sub, 缺省test
 >	InputCmd         bool          // jbzhou5 非会话模式切换为命>令行输入
 >	PrometheusSwitch bool          // jbzhou5 Prometheus写入开>关
->	Plot             bool          // jbzhou5 绘制图形开关
+> PrometheusPort   int           // jbzhou5 Prometheus指标服务端口
+> Plot             bool          // jbzhou5 绘制图形开关
 >	PlotFile         string        // jbzhou5 绘制图像保存路径
 >	FileSorted       int           // jbzhou5 文件排序方式
 >	FileNameSeq      string        // 文件名分割方式
@@ -755,6 +756,7 @@ perfLevel=0                     # 非会话模式默认0
 service_pid = 130				# AiService 的PID号
 inputCmd = false 				# 切换为命令行输入，仅在非会话模式生效
 prometheus_switch = true  		# Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
+prometheus_port = 2117    # jbzhou5 Prometheus指标暴露端口
 plot = true  					# 绘制资源图， 默认开启
 plot_file = "./log/line.png"    # 绘制图形保存路径
 file_sorted = 0  				# 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
