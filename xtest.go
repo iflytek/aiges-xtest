@@ -17,9 +17,6 @@ import (
 func main() {
 	f := _var.NewFlag()
 	f.Parse()
-	//if *f.XTestVersion {
-	//	fmt.Println("2.5.2")
-	//}
 	// xrpc框架初始化;
 	cli, e := xsfcli.InitClient(_var.CliName, utils.CfgMode(0), utils.WithCfgName(*f.CmdCfg),
 		utils.WithCfgURL(""), utils.WithCfgPrj(""), utils.WithCfgGroup(""),
