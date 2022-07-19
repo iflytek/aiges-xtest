@@ -15,7 +15,16 @@
 > main函数负责解析参数、初始化客户端，并实现多协程异步记录测试日志
 >
 > ```go
-> // 函数负责并发线性增长控制,防止瞬时并发请求冲击
+> // Xtest 结构体
+> type Xtest struct {
+>	r   request.Request // 与请求有关的对象
+>	cli *xsfcli.Client // rpc客户端
+>}
+> // NewXtest 传入rpc客户端和全局配置，实例化Xtest对象
+> func NewXtest(cli *xsfcli.Client, conf _var.Conf) Xtest
+> // Run 启动测试流程
+> func (x *Xtest) Run()
+> // linearCtl 函数负责并发线性增长控制,防止瞬时并发请求冲击
 > func linearCtl()
 > ```
 
@@ -24,7 +33,7 @@
 #### Ⅰ. errdist.go： 运行错误信息有关的结构体与函数定义
 
 > ```go
-> type errInfo struct {
+> type ErrInfo struct {
 > 	errCode int
 > 	errStr  error
 > }
@@ -33,11 +42,12 @@
 > type errDistAnalyser struct {
 > 	errCnt   map[int]int64 // map[error]count 错误计数
 > 	errDsc   map[int]error // 错误描述
-> 	errTmp   []errInfo     // 临时存储区,用于channel满阻塞的极端场景;
+> 	errTmp   []ErrInfo     // 临时存储区,用于channel满阻塞的极端场景;
 > 	errMutex sync.Mutex	   // 互斥锁
-> 	errChan  chan errInfo // errorInfo管道
+> 	errChan  chan ErrInfo // errorInfo管道
 > 	swg      sync.WaitGroup // 并发同步原语
 > 	log      *utils.Logger // 日志写入
+>     ErrAnaDst string // 错误日志存储地址
 > }
 > 
 > // 初始化 errDistAnalyser 结构体成员，并启动一个count计数协程计算errCnt
@@ -228,8 +238,49 @@
 #### Ⅰ. libh264bitstream.so.0
 
 ### 2.5 log 文件夹
+> 记录Xtest运行日志，常见的有如下：
+> - .png 运行资源变化折线图
+> - errDist: 错误分析日志
+> - perf.txt perf.cvs: 性能分析日志
+> - result: 运行结果
+> - xtest*.log: Xtest运行日志
 
 ### 2.6 prometheus文件夹
+#### Ⅰ. resource.go: 资源记录相关函数定义
+> ```go
+> // Resource 资源条目
+> type Resource struct {
+>	Mem  float64 // 内存
+>	Cpu  float64 // cpu
+>	Time float64 // 时间
+>}
+>
+>type Resources struct {
+>	resourceChan chan Resource // 发送资源条目的管道
+>	resources    []Resource // 记录条目的数组
+>	stopChan     chan bool // 通知关闭记录的管道
+>	wg           sync.WaitGroup
+>}
+>
+> // NewResources 实例化资源结构体
+>func NewResources() Resources
+>
+>// Serve 启动Prometheus监听
+>func (rs *Resources) Serve() 
+>// ReadMem 获取内存使用, 传入AiService的PID
+>func (rs *Resources) ReadMem(pid int) error 
+> // 从管道中读取数据存储到数组中
+>func (rs *Resources) GenerateData()
+>
+>// MetricValue 获取metric的Value值
+>func (rs *Resources) MetricValue(m prometheus.Gauge) >(float64, error) 
+>// Draw 绘制图片
+>func (rs *Resources) Draw(dst string) error 
+> 关闭管道，通知停止采集数据
+>func (rs *Resources) Stop()
+>
+>// bToMb bit转Mb
+>func bToMb(b uint64) uint64 
 
 ### 2.7、request文件夹
 
@@ -237,9 +288,9 @@
 
 > ```go
 > // 文件session请求
-> func FileSessionCall(cli *xsfcli.Client, index int64) (code int, err error) 
+> func FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo)
 > // 文件AI上行请求
-> func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, code int, err error) 
+> func FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) 
 > // 多线程文件上传流请求
 > func FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan struct {
 > code int
@@ -250,18 +301,12 @@
 > func FilertCalibration(curReq int, interval int, sTime time.Time)
 > 
 > // downStream 下行调用单线程;
-> func FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (code int, err error) 
+> func FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) 
 > // 文件session报错
 > func FilesessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error)
 > 
 > // upStream first error ，将上传流错误写入ch管道
-> func FileunBlockChanWrite(ch chan struct {
-> code int
-> err  error
-> }, err struct {
-> code int
-> err  error
-> }) 
+> func FileunBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo) 
 > ```
 
 #### Ⅱ. oneShot.go：与RPC通信有关的函数定义
@@ -269,7 +314,7 @@
 > ```go
 > // 使用xsf框架发起RPC通信，设置协议参数、上行数据键值对，使用ONESHORT方式发起SessionCall，然后
 > // 下行数据解析到AsyncDrop下行数据异步落盘同步通道，如果通道满了，使用downOutput函数写入本地文件。
-> func OneShotCall(cli *xsfcli.Client, index int64) (code int, err error)
+> func OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo)
 > ```
 
 #### Ⅲ. output.go：下行数据输出有关的函数定义
@@ -280,80 +325,69 @@
 > // 写入数据到本地文件（_var.OutputDst和_var.Output配置相关文件路径）
 > func downOutput(key string, data []byte, log *utils.Logger)
 > ```
+#### Ⅳ. request.go 
+>```go
+> // 请求结构体，只有一个配置成员
+> type Request struct {
+>	C _var.Conf // 请求所需的配置
+>}
 
-#### Ⅳ. session.go
+
+#### Ⅴ. session.go
 
 > ```go
 > // Session调用
-> func SessionCall(cli *xsfcli.Client, index int64) (code int, err error) 
+> func SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) 
 > 
 > // AI调用输入
-> func sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol.EngOutputData, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.EngOutputData_DataStatus, code int, err error)
+> func sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol.EngOutputData, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.EngOutputData_DataStatus, info analy.ErrInfo)
 > 
 > // 多线程上传流
-> func multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, interval int, indexs map[int]int, sid string, pm *[]protocol.EngOutputData, sm *sync.Mutex, errchan chan struct {
-> 	code int
-> 	err  error
-> })
+> func multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, interval int, indexs map[int]int, sid string, pm *[]protocol.EngOutputData, sm *sync.Mutex, errchan chan analy.ErrInfo)
 > // 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
 > func rtCalibration(curReq int, interval int, sTime time.Time)
 > // downStream 下行调用单线程;
-> func sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.EngOutputData) (code int, err error) 
+> func sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.EngOutputData) (info analy.ErrInfo) 
 > // 
 > func sessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error)
 > // upStream first error 将错误信息发送至ch管道
-> func unBlockChanWrite(ch chan struct {
-> 	code int
-> 	err  error
-> }, err struct {
-> 	code int
-> 	err  error
-> })
+> func unBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo)
 > ```
 
-#### Ⅴ. signal.go：xtest退出有关的函数定义
+#### Ⅵ. signal.go：xtest退出有关的函数定义
 
 > ```go
 > // 通过signal.Notify转发信号，优雅退出程序
 > func SigRegister() 
 > ```
 
-#### Ⅵ. splitFrame.go
+#### Ⅶ. splitFrame.go
 
 > ```go
 > func GetH264Frames(video []byte) (frameSizes []int)
 > ```
 
-#### Ⅶ. textLine.go
+#### Ⅷ. textLine.go
 
 > ```go
 > // 文本session请求
-> func TextCall(cli *xsfcli.Client, index int64) (code int, err error)
+> func TextCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo)
 > // 文本AI上行
-> func TextAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, code int, err error)
+> func TextAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo)
 > 
 > // 多线程文本上行数据流
-> func TextmultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan struct {
-> code int
-> err  error
-> }) 
+> func TextmultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) 
 > 
 > // 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
 > func TextrtCalibration(curReq int, interval int, sTime time.Time)
 > 
 > // downStream 下行调用单线程;
-> func TextsessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (code int, err error) 
+> func TextsessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) 
 > 
 > func TextsessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error)
 > 
 > // upStream first error，错误日志写入管道
-> func TextunBlockChanWrite(ch chan struct {
-> code int
-> err  error
-> }, err struct {
-> code int
-> err  error
-> }) 
+> func TextunBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo) 
 > ```
 
 ### 2.8、script文件夹
@@ -482,6 +516,9 @@ func CompFunc(flag int, i, j string) bool
 ```
 
 #### Ⅲ ptermShow.go： 与进度条有关的函数定义
+>```go
+> // 输出一个任务进度条
+> func ProgressShow(cnt *atomic.Int64, cnt1 int64)
 
 #### Ⅳ sid.go：与sid生成有关的函数定义
 
@@ -500,17 +537,45 @@ func CompFunc(flag int, i, j string) bool
 > ```
 
 #### Ⅴ task.go： 与定时任务有关的函数定义
+>```go
+> // ScheduledTaskPool 定时任务池
+>type ScheduledTaskPool struct {
+>	Size         int            // 任务个数
+>	TimeStopChan chan bool      // // 通知定时任务结束协程
+>	wg           sync.WaitGroup // 同步原语
+>}
+> // NewScheduledTaskPool 实例化一个任务池对象
+>func NewScheduledTaskPool() ScheduledTaskPool 
+>
+>// Start 启动一个定时任务 jbzhou5
+>func (stp *ScheduledTaskPool) Start(d time.Duration, f func())
+>
+>// Stop 结束定时任务
+>func (stp *ScheduledTaskPool) Stop() 
 
 ### 2.11、var文件夹
 
 #### Ⅰ. cmd.go：命令行输入相关
 
 > ```go
-> var (
-> // default 缺省配置模式为native
->     CmdCfg = flag.String("f", "xtest.toml", "client cfg name") // 配置文件选项
->     XTestVersion = flag.String("v", "2.5.2", "xtest version") // Xtest版本号
-> )
+>type Flag struct {
+>	/*	CmdMode		= xsf.Mode				// -m
+>		CmdCfg		= xsf.Cfg				// -c
+>		CmdProject	= xsf.Project			// -p
+>		CmdGroup	= xsf.Group				// -g
+>		CmdService	= xsf.Service			// -s
+>		CmdCompanionUrl = xsf.CompanionUrl	// -u
+>	*/
+>	// default 缺省配置模式为native
+>	CmdCfg       *string // 指定配置文件
+>	XTestVersion *bool // xtest版本
+>}
+>
+> // 使用Flag包将Flag结构体中的变量和命令行参数绑定
+>func NewFlag() Flag 
+>
+> // 解析命令行参数填充到flag结构体
+>func (f *Flag) Parse() 
 > // 打印xtest用法配置选项
 > func Usage() 
 > ```
@@ -543,64 +608,84 @@ func CompFunc(flag int, i, j string) bool
 > 	Desc map[string]string // 数据描述
 > 	Data []byte            // 下行数据实体
 > }
-> 
-> var (
-> 	// [svcMode]
-> 	SvcId         string        = "s12345678"
-> 	SvcName       string        = "AIservice"            // dst service name
-> 	TimeOut       int           = 1000                   // 超时时间: ms, 对应加载器waitTime
-> 	LossDeviation int           = 50                     // 自身性能损耗误差, ms.
-> 	MultiThr      int           = 100                    // 请求并发数
-> 	DropThr                     = 100                    // 下行数据异步输出线程数
-> 	LoopCnt       *atomic.Int64 = atomic.NewInt64(10000) // 请求总次数
-> 	ReqMode       int           = 0                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
-> 	LinearNs      int           = 0                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
-> 	TestSub       string        = "ase"                  // 测试业务sub, 缺省test
-> 
-> 	PerfConfigOn bool = false //true: 开启性能检测 false: 不开启性能检测
-> 	PerfLevel    int  = 0     //非会话模式默认0
-> 	//会话模式0: 从发第一帧到最后一帧的性能
-> 	//会话模式1:首结果(发送第一帧到最后一帧的性能)
-> 	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
-> 	// 请求参数对
-> 	Header map[string]string = make(map[string]string)
-> 	Params map[string]string = make(map[string]string)
-> 
-> 	Payload []string // 上行数据流
-> 	Expect  []string // 下行数据流
-> 
-> 	// 上行数据流配置, 多数据流通过section [data]中payload进行配置
-> 	UpStreams []InputMeta = make([]InputMeta, 0, 1)
-> 
-> 	DownExpect []protocol.MetaDesc
-> 
-> 	// [downstream]
-> 	Output = 0 // 0：输出至公共文件outputDst(sid+***:data)
-> 	// 1：以独立文件形式输出至目录outputDst(文件名:sid+***)
-> 	// 2：输出至终端
-> 	//-1：不输出
-> 	OutputDst = "./log/result" // output=0时,该项配置输出文件名; output=1时,该项配置输出目录名
-> 	ErrAnaDst = "./log/errDist"
-> 	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
-> )
-> 
-> // 参数初始化
-> func ConfInit(conf *utils.Configure) error
-> // 解析下行数据字段
-> func secParseEp(conf *utils.Configure) error 
-> //解析上行数据字段
-> func secParsePl(conf *utils.Configure) error
-> // 解析RPC服务字段
-> func secParseSvc(conf *utils.Configure) error 
-> // 解析请求头字段
-> func secParseHeader(conf *utils.Configure) error
-> // 解析请求参数字段
-> func secParseParams(conf *utils.Configure) error
-> // 解析请求数据字段
-> func secParseData(conf *utils.Configure) error
-> // 解析下行数据流字段
-> func secParseDStream(conf *utils.Configure) error
-> 
+> // 配置
+>type Conf struct {
+>	// [svcMode]
+>	SvcId            string
+>	SvcName          string        // dst service name
+>	TimeOut          int           // 超时时间: ms, 对应加载器>waitTime
+>	LossDeviation    int           // 自身性能损耗误差, ms.
+>	MultiThr         int           // 请求并发数
+>	DropThr          int           // 下行数据异步输出线程数
+>	LoopCnt          *atomic.Int64 // 请求总次数
+>	ReqMode          int           // 0: 非会话模式, 1: 常规会话>模式 2.文本按行会话模式 3.文件会话模式
+>	LinearNs         int           // 并发模型线性增长时间,用于计>算并发增长斜率(单位：ns). default:0,瞬时并发压测.
+>	TestSub          string        // 测试业务sub, 缺省test
+>	InputCmd         bool          // jbzhou5 非会话模式切换为命>令行输入
+>	PrometheusSwitch bool          // jbzhou5 Prometheus写入开>关
+>	Plot             bool          // jbzhou5 绘制图形开关
+>	PlotFile         string        // jbzhou5 绘制图像保存路径
+>	FileSorted       int           // jbzhou5 文件排序方式
+>	FileNameSeq      string        // 文件名分割方式
+>	PerfConfigOn     bool          //true: 开启性能检测 false: >不开启性能检测
+>	PerfLevel        int           //非会话模式默认0
+>	//会话模式0: 从发第一帧到最后一帧的性能
+>	//会话模式1:首结果(发送第一帧到最后一帧的性能)
+>	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
+>	// 请求参数对
+>	Header map[string]string
+>	Params map[string]string
+>
+>	Payload []string // 上行数据流
+>	Expect  []string // 下行数据流
+>
+>	// 上行数据流配置, 多数据流通过section [data]中payload进行配置
+>	UpStreams []InputMeta
+>
+>	DownExpect []protocol.MetaDesc
+>
+>	// [downstream]
+>	Output int // 0：输出至公共文件outputDst(sid+***:data)
+>	// 1：以独立文件形式输出至目录outputDst(文件名:sid+***)
+>	// 2：输出至终端
+>	//-1：不输出
+>	OutputDst string // output=0时,该项配置输出文件名; output=1>时,该项配置输出目录名
+>	ErrAnaDst string
+>	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
+>
+>	// jbzhou5 性能资源日志保存目录
+>	// ResourcesDst = "./"
+>	// jbzhou5 Prometheus并发协程计数器
+>	ServicePid     int // jbzhou5 Aiservice的PID号
+>	ConcurrencyCnt prometheus.Gauge
+>	// jbzhou5 Prometheus监听参数
+>	CpuPer prometheus.Gauge
+>	MemPer prometheus.Gauge
+>}
+>
+>func NewConf() Conf
+> // 调用解析函数，将配置文件数据填充到conf结构体
+>func (c *Conf) ConfInit(conf *utils.Configure) error
+>
+> // 解析Expect
+>func (c *Conf) secParseEp(conf *utils.Configure) error 
+>
+>//解析payload
+>func (c *Conf) secParsePl(conf *utils.Configure) error
+> // 解析service
+>func (c *Conf) secParseSvc(conf *utils.Configure) error
+> // 解析Header
+>func (c *Conf) secParseHeader(conf *utils.Configure) error
+> // 解析params
+>func (c *Conf) secParseParams(conf *utils.Configure) error
+> // 解析数据
+>func (c *Conf) secParseData(conf *utils.Configure) error 
+> // 解析下行流
+>func (c *Conf) secParseDStream(conf *utils.Configure) error
+>
+>//jbzhou5 解析命令行输入的数据
+>func (c *Conf) secParseCmd(conf *utils.Configure) error
+>
 > ```
 
 ## 三、需求分析
