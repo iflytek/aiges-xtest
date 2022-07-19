@@ -119,6 +119,7 @@ type Conf struct {
 	TestSub          string        // 测试业务sub, 缺省test
 	InputCmd         bool          // jbzhou5 非会话模式切换为命令行输入
 	PrometheusSwitch bool          // jbzhou5 Prometheus写入开关
+	PrometheusPort   int           // jbzhou5 Prometheus指标服务端口
 	Plot             bool          // jbzhou5 绘制图形开关
 	PlotFile         string        // jbzhou5 绘制图像保存路径
 	FileSorted       int           // jbzhou5 文件排序方式
@@ -437,6 +438,11 @@ func (c *Conf) secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 Prometheus写入开关
 	if prometheusSwitch, err := conf.GetBool(secTmp, "prometheus_switch"); err == nil {
 		c.PrometheusSwitch = prometheusSwitch
+	}
+
+	// jbzhou5 Prometheus指标端口
+	if prometheusPort, err := conf.GetInt(secTmp, "prometheus_port"); err == nil {
+		c.PrometheusPort = prometheusPort
 	}
 
 	// jbzhou5 资源监控绘图开关

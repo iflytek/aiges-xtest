@@ -2,6 +2,7 @@ package prometheus
 
 import (
 	"errors"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
@@ -35,10 +36,11 @@ func NewResources() Resources {
 }
 
 // Serve 启动Prometheus监听
-func (rs *Resources) Serve() {
+func (rs *Resources) Serve(port int) error {
 	server := http.NewServeMux()
 	server.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":2117", server)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), server)
+	return err
 }
 
 // ReadMem 获取内存使用, 传入AiService的PID

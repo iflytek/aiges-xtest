@@ -74,7 +74,7 @@ func (x *Xtest) Run() {
 	r := prometheus.NewResources()     // 开启资源监听实例
 	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
 	if x.r.C.PrometheusSwitch {
-		go r.Serve() // jbzhou5 启动一个协程写入Prometheus
+		go r.Serve(x.r.C.PrometheusPort) // jbzhou5 启动一个协程写入Prometheus
 	}
 
 	if x.r.C.Plot {
