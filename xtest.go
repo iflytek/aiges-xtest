@@ -104,7 +104,10 @@ func (x *Xtest) Run() {
 	xsfcli.DestroyClient(x.cli)
 	stp.Stop() // 关闭定时任务
 	r.Stop()   // 关闭资源收集
-	r.Draw(x.r.C.PlotFile)
+	r.Dump() // 持久化资源日志
+	if x.r.C.Plot {
+		r.Draw(x.r.C.PlotFile)
+	}
 	pterm.DefaultBasicText.Println(pterm.LightGreen("\ncli finish "))
 }
 

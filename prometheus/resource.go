@@ -1,6 +1,7 @@
 package prometheus
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,6 +9,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	utilProcess "github.com/shirou/gopsutil/process"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 	"xtest/util"
@@ -18,6 +20,10 @@ type Resource struct {
 	Cpu  float64
 	Time float64
 }
+
+const (
+	outputResourceFile = "./log/resource.txt"
+)
 
 type Resources struct {
 	resourceChan chan Resource
@@ -119,6 +125,30 @@ func (rs *Resources) Draw(dst string) error {
 func (rs *Resources) Stop() {
 	rs.stopChan <- true
 	rs.wg.Wait()
+}
+
+// Dump 持久化日志
+func (rs *Resources) Dump() error {
+	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	for _, r := range rs.resources {
+		rs, err := json.Marshal(r)
+		if err != nil {
+			return err
+		}
+		rs = append(rs, '\n')
+		_, err = f.Write(rs)
+		if err != nil {
+			return err
+		}
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // bToMb bit转Mb
