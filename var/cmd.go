@@ -31,6 +31,7 @@ func (f *Flag) Parse()  {
 	flag.Parse()
 	if *f.XTestVersion {
 		fmt.Println("2.5.2")
+		os.Exit(0)
 		return
 	}
 }
