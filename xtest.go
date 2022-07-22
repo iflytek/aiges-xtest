@@ -56,7 +56,7 @@ func (x *Xtest) Run() {
 	}
 
 	// 启动一个系统资源定时任务
-	stp.Start(time.Microsecond*50, func() {
+	stp.Start(time.Microsecond*100, func() {
 		err := r.ReadMem(x.r.C.ServicePid)
 		if err != nil {
 			return

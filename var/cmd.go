@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"syscall"
 )
 
 type Flag struct {
@@ -31,7 +32,8 @@ func (f *Flag) Parse()  {
 	flag.Parse()
 	if *f.XTestVersion {
 		fmt.Println("2.5.2")
-		os.Exit(0)
+		//os.Exit(0)
+		syscall.Exit(0)
 		return
 	}
 }

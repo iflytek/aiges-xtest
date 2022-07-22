@@ -1,7 +1,6 @@
 package prometheus
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,7 +21,7 @@ type Resource struct {
 }
 
 const (
-	outputResourceFile = "./log/resource.txt"
+	outputResourceFile = "./log/resource.csv"
 )
 
 type Resources struct {
@@ -57,11 +56,12 @@ func (rs *Resources) ReadMem(pid int) error {
 	}
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
-	rs.resourceChan <- Resource{
+	r := Resource{
 		Mem:  float64(memPer),
 		Cpu:  cpuPer,
 		Time: float64(time.Now().UnixMicro()),
 	}
+	rs.resourceChan <- r
 	//_var.CpuPer.Set(cpuPer)
 	//_var.MemPer.Set(float64(memPer))
 	return nil
@@ -130,16 +130,12 @@ func (rs *Resources) Stop() {
 // Dump 持久化日志
 func (rs *Resources) Dump() error {
 	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	_, err = f.WriteString("CPU,MEMORY,TIME\n")
 	if err != nil {
 		return err
 	}
 	for _, r := range rs.resources {
-		rs, err := json.Marshal(r)
-		if err != nil {
-			return err
-		}
-		rs = append(rs, '\n')
-		_, err = f.Write(rs)
+		_, err = f.WriteString(fmt.Sprintf("%f,%f,%s\n", r.Cpu, r.Mem, time.UnixMicro(int64(r.Time)).Format("2006-01-02 15:04:05.000")))
 		if err != nil {
 			return err
 		}
@@ -149,6 +145,12 @@ func (rs *Resources) Dump() error {
 		return err
 	}
 	return nil
+}
+
+// DetectPort 通过端口号得出进程
+func (rs *Resources) DetectPort(port int)  (int, error) {
+
+	return -1, nil
 }
 
 // bToMb bit转Mb
