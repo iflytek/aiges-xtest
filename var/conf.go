@@ -106,6 +106,8 @@ type OutputMeta struct {
 //)
 
 type Conf struct {
+	// [xtest]
+	Taddrs			string
 	// [svcMode]
 	SvcId            string
 	SvcName          string        // dst service name
@@ -153,7 +155,6 @@ type Conf struct {
 	// jbzhou5 性能资源日志保存目录
 	// ResourcesDst = "./"
 	// jbzhou5 Prometheus并发协程计数器
-	ServicePid     int // jbzhou5 Aiservice的PID号
 	ConcurrencyCnt prometheus.Gauge
 	// jbzhou5 Prometheus监听参数
 	CpuPer prometheus.Gauge
@@ -162,6 +163,7 @@ type Conf struct {
 
 func NewConf() Conf {
 	return Conf{
+		Taddrs: "",
 		SvcId:            "s12345678",
 		SvcName:          "AIservice",            // dst service name
 		TimeOut:          1000,                   // 超时时间: ms, 对应加载器waitTime
@@ -207,7 +209,6 @@ func NewConf() Conf {
 		// jbzhou5 性能资源日志保存目录
 		// ResourcesDst = "./"
 		// jbzhou5 Prometheus并发协程计数器
-		ServicePid: 0, // jbzhou5 Aiservice的PID号
 		ConcurrencyCnt: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "Xtest_Concurrency_Go_Routine",
 			Help: "The total number of processed events",
@@ -225,6 +226,10 @@ func NewConf() Conf {
 }
 
 func (c *Conf) ConfInit(conf *utils.Configure) error {
+	if err := c.secParseXtest(conf); err != nil {
+		return err
+	}
+
 	if err := c.secParseSvc(conf); err != nil {
 		return err
 	}
@@ -264,9 +269,12 @@ func (c *Conf) ConfInit(conf *utils.Configure) error {
 	return nil
 }
 
-// XXX jbzhou5 解析命令行参数到Conf
-func (c *Conf) XXX()  {
-
+func (c *Conf) secParseXtest(conf *utils.Configure) error {
+	secTmp := "xtest"
+	if taddrs, err := conf.GetString(secTmp, "taddrs"); err == nil {
+		c.Taddrs = taddrs
+	}
+	return nil
 }
 
 func (c *Conf) secParseEp(conf *utils.Configure) error {
@@ -426,10 +434,6 @@ func (c *Conf) secParseSvc(conf *utils.Configure) error {
 		c.LinearNs = (linearms * 1000 * 1000) / c.MultiThr
 	}
 
-	// jbzhou5 监听的AiService PID号
-	if servicePid, err := conf.GetInt(secTmp, "service_pid"); err == nil {
-		c.ServicePid = servicePid
-	}
 	// jbzhou5 当模式为非会话且配置了cmd输入，才开启手动输入
 	if inputCmd, err := conf.GetBool(secTmp, "inputCmd"); err == nil && c.ReqMode == 0 {
 		c.InputCmd = inputCmd

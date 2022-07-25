@@ -9,6 +9,8 @@ import (
 	utilProcess "github.com/shirou/gopsutil/process"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"xtest/util"
@@ -49,7 +51,24 @@ func (rs *Resources) Serve(port int) error {
 }
 
 // ReadMem 获取内存使用, 传入AiService的PID
-func (rs *Resources) ReadMem(pid int) error {
+func (rs *Resources) ReadMem(taddrs string) (err error) {
+	var pid int
+	port, err := strconv.Atoi(strings.Split(taddrs, ":")[1])
+	if err != nil {
+		return  err
+	}
+	for _, tcp := range util.Tcp() {
+		if tcp.Port == int64(port) && tcp.State == "LISTEN"{
+			pid, err = strconv.Atoi(tcp.Pid)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	if pid == 0 {
+		return errors.New(fmt.Sprintf("No process listening port: ", port))
+	}
 	x, err := utilProcess.NewProcess(int32(pid))
 	if err != nil {
 		return errors.New("Pid Not Found! ")
