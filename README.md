@@ -720,7 +720,7 @@ func CompFunc(flag int, i, j string) bool
 
 ## 四、功能规划
 
-开启性能测试：
+开启性能测试：日志大小预估
 
 100次： 207KB
 
@@ -732,7 +732,6 @@ func CompFunc(flag int, i, j string) bool
 
 todolist:
 
-- [x] 渲染本地数据到图片
 ## 五、配置说明
 
 ### 5.1 样例配置
@@ -815,3 +814,23 @@ die = 30
 [trace]
 able = 0
 ```
+### 六、字段说明
+> **xtest.toml 中大部分字段一般保持不变，下面仅对常用字段进行说明解释。**
+- taddrs="AIservice@127.0.0.1:5090"： 与Aiservice的通信地址，与AIservice的启动端口对应，其中端口会被解析用于获取Aiservice的进程，监听其使用资源信息。
+- timeout = 1000 ：服务超时时间, 对应服务端waitTime
+- multiThr = 100 ：请求并发数，即同时开启多个协程发送请求测试
+- loopCnt = 100000 ： multiThr个协程发送的请求总次数
+- sessMode = 0 ： 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
+- linearMs = 5000 ：并发压测线性增长区间,单位:ms
+- perfOn=true ： 是否开启性能测试，即是否在log文件夹底下记录perf.txt和PerfRecord.csv，用于记录成功率、失败率、发送延迟等性能指标。
+- perfLevel=0 ：与sessMode字段对应                  # 非会话模式默认0
+                                # 会话模式0: 从发第一帧到最后一帧的性能
+                                # 会话模式1:首结果(发送第一帧到最后一帧的性能)
+                                # 会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
+- inputCmd = false ：切换为命令行输入，仅在非会话模式生效，配置该字段时，所配置的[data] 字段将失效，仅读取用户命令行输入数据
+ prometheus_switch = true ：Prometheus开关，开启后会开放一个Prometheus监控端口，可使用grafana进行数据的展示。关闭/打开都会在Log目录生成一个Resource.csv 资源监听文件。
+- prometheus_port = 2117    # Prometheus指标暴露端口
+- plot = true ：绘制资源图， 默认开启，将绘制Aiservice使用的资源变化折线图
+- plot_file = "./log/line.png" ：绘制图形保存路径
+- file_sorted = 0 ：[data] 传入文件是否按名称排序， 0： 随机， 1： 升序， 2： 降序
+- file_name_seq = "_" ： 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法（即不能作为文件名的字符）则不处理， 注意此处分割为仅保留前半部分，若文件名为1_2_3.txt， 则得到的分割文件名为1。
