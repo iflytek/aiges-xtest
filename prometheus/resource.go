@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 	"xtest/util"
+	_var "xtest/var"
 )
 
 type Resource struct {
@@ -51,8 +52,9 @@ func (rs *Resources) Serve(port int) error {
 }
 
 // ReadMem 获取内存使用, 传入AiService的PID
-func (rs *Resources) ReadMem(taddrs string) (err error) {
+func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	var pid int
+	taddrs := c.Taddrs
 	port, err := strconv.Atoi(strings.Split(taddrs, ":")[1])
 	if err != nil {
 		return  err
@@ -75,14 +77,14 @@ func (rs *Resources) ReadMem(taddrs string) (err error) {
 	}
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
+	c.CpuPer.Set(cpuPer)
+	c.MemPer.Set(float64(memPer))
 	r := Resource{
 		Mem:  float64(memPer),
 		Cpu:  cpuPer,
 		Time: float64(time.Now().UnixMicro()),
 	}
 	rs.resourceChan <- r
-	//_var.CpuPer.Set(cpuPer)
-	//_var.MemPer.Set(float64(memPer))
 	return nil
 }
 

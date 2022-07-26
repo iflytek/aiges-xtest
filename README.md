@@ -267,8 +267,8 @@
 >
 >// Serve 启动Prometheus监听
 >func (rs *Resources) Serve() 
->// ReadMem 获取内存使用, 传入AiService的PID
->func (rs *Resources) ReadMem(pid int) error 
+>// ReadMem 获取内存使用, 传入AiService的地址
+>func (rs *Resources) ReadMem(taddrs string) error 
 > // 从管道中读取数据存储到数组中
 >func (rs *Resources) GenerateData()
 >
@@ -610,6 +610,8 @@ func CompFunc(flag int, i, j string) bool
 > }
 > // 配置
 >type Conf struct {
+>  // [xtest]
+>  Taddrs            string
 >	// [svcMode]
 >	SvcId            string
 >	SvcName          string        // dst service name
@@ -753,7 +755,6 @@ perfLevel=0                     # 非会话模式默认0
                                 # 会话模式0: 从发第一帧到最后一帧的性能
                                 # 会话模式1:首结果(发送第一帧到最后一帧的性能)
                                 # 会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
-service_pid = 130				# AiService 的PID号
 inputCmd = false 				# 切换为命令行输入，仅在非会话模式生效
 prometheus_switch = true  		# Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
 prometheus_port = 2117    # jbzhou5 Prometheus指标暴露端口
