@@ -3,6 +3,7 @@
    Get data from /proc/net/tcp and /proc/net/udp and
    and parse /proc/[0-9]/fd/[0-9].
    Author: Rafael Santos <rafael@sourcecode.net.br>
+   https://github.com/drael/GOnetstat
 */
 
 package util
