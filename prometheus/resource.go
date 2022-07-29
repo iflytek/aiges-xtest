@@ -20,6 +20,7 @@ import (
 type Resource struct {
 	Mem  float64
 	Cpu  float64
+	Gpu  string
 	Time float64
 }
 
@@ -75,13 +76,25 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	if err != nil {
 		return errors.New("Pid Not Found! ")
 	}
+	processes, err := util.GpuProcesses()
+	if err != nil {
+		return errors.New("Nvidia-smi errors!")
+	}
+	var gpu string
+	for _, p := range processes {
+		if p.Pid == pid {
+			gpu = p.UsedMemory
+		}
+	}
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
+
 	c.CpuPer.Set(cpuPer)
 	c.MemPer.Set(float64(memPer))
 	r := Resource{
 		Mem:  float64(memPer),
 		Cpu:  cpuPer,
+		Gpu: gpu,
 		Time: float64(time.Now().UnixMicro()),
 	}
 	rs.resourceChan <- r
@@ -156,7 +169,7 @@ func (rs *Resources) Dump() error {
 		return err
 	}
 	for _, r := range rs.resources {
-		_, err = f.WriteString(fmt.Sprintf("%f,%f,%s\n", r.Cpu, r.Mem, time.UnixMicro(int64(r.Time)).Format("2006-01-02 15:04:05.000")))
+		_, err = f.WriteString(fmt.Sprintf("%f,%f,%s,%s\n", r.Cpu, r.Mem, r.Gpu, time.UnixMicro(int64(r.Time)).Format("2006-01-02 15:04:05.000")))
 		if err != nil {
 			return err
 		}
