@@ -78,7 +78,7 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	}
 	processes, err := util.GpuProcesses()
 	if err != nil {
-		return errors.New("Nvidia-smi errors!")
+		return errors.New("Nvidia-smi errors! ")
 	}
 	var gpu string
 	for _, p := range processes {
@@ -164,7 +164,7 @@ func (rs *Resources) Stop() {
 // Dump 持久化日志
 func (rs *Resources) Dump() error {
 	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
-	_, err = f.WriteString("CPU,MEMORY,TIME\n")
+	_, err = f.WriteString("CPU,MEMORY,GPU,TIME\n")
 	if err != nil {
 		return err
 	}
