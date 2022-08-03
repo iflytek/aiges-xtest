@@ -54,23 +54,14 @@ func (rs *Resources) Serve(port int) error {
 
 // ReadMem 获取内存使用, 传入AiService的PID
 func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
-	var pid int
 	taddrs := c.Taddrs
 	port, err := strconv.Atoi(strings.Split(taddrs, ":")[1])
 	if err != nil {
 		return  err
 	}
-	for _, tcp := range util.Tcp() {
-		if tcp.Port == int64(port) && tcp.State == "LISTEN"{
-			pid, err = strconv.Atoi(tcp.Pid)
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-	if pid == 0 {
-		return errors.New(fmt.Sprintf("No process listening port: ", port))
+	pid,  err := rs.DetectPort(port)
+	if err != nil {
+		return err
 	}
 	x, err := utilProcess.NewProcess(int32(pid))
 	if err != nil {
@@ -183,8 +174,21 @@ func (rs *Resources) Dump() error {
 
 // DetectPort 通过端口号得出进程
 func (rs *Resources) DetectPort(port int)  (int, error) {
-
-	return -1, nil
+	var pid int
+	var err error
+	for _, tcp := range util.Tcp() {
+		if tcp.Port == int64(port) && tcp.State == "LISTEN"{
+			pid, err = strconv.Atoi(tcp.Pid)
+			if err != nil {
+				return 0, err
+			}
+			break
+		}
+	}
+	if pid == 0 {
+		return 0, errors.New(fmt.Sprintf("No process listening port: ", port))
+	}
+	return pid, nil
 }
 
 // bToMb bit转Mb

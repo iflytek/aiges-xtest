@@ -12,6 +12,5 @@ func TestProgressShow(t *testing.T) {
 			cnt.Add(-1)
 		}
 	}()
-	ProgressShow(cnt)
-
+	ProgressShow(cnt, 10)
 }
