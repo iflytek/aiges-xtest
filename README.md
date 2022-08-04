@@ -194,4 +194,4 @@ able = 0
   - ```able = 0```
 
 
-## 六、[代码说明](https://github.com/tupig-7/aiges-xtest/doc/code.md)
+## 六、[代码说明](https://github.com/tupig-7/aiges-xtest/tree/main/doc)
