@@ -144,7 +144,7 @@ able = 0
   - ```plot_file = "./log/line.png"``` ：绘制图形保存路径
   - ```file_sorted = 0``` ：[data] 传入文件是否按名称排序， 0： 随机， 1： 升序， 2： 降序
   - ```file_name_seq = "_"``` ： 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法（即不能作为文件名的字符）则不处理， 注意此处分割为仅保留前半部分，若文件名为1_2_3.txt， 则得到的分割文件名为1。
-- 
+
 - ```[parameter]```：使用的AI模型需要传入的字段，根据自己需要填写
   - ```"key" = 2```
   - ```"x" = 1```
@@ -160,7 +160,7 @@ able = 0
   - ```interval = 40```： 上行数据发包间隔,用于会话模式: ms. 注：动态校准,每个包间隔非严格interval
   - ```name = "input1"```： 输入数据流key值
   - ```type = "image"```： 数据类型，支持"audio","text","image","video"
-  - ```describe = "k1=v1;k2=v2"``： 数据描述信息,多个描述信息以";"分割，图像支持如下属性："encoding", 如"encoding=jpg"
+  - ```describe = "k1=v1;k2=v2"```： 数据描述信息,多个描述信息以";"分割，图像支持如下属性："encoding", 如"encoding=jpg"
 
 - ```[dataKey2]```
   - ```inputSrc = "./testdata/text2"```：上行数据流数据源, 配置文件路径(配置为目录则循环读取目录中文件)
@@ -196,7 +196,7 @@ able = 0
 
 ## 六、代码目录
 
-### 6.1、根目录
+### 6.1 根目录
 
 #### Ⅰ.  xtest.go
 
@@ -218,7 +218,7 @@ able = 0
 > func (x *Xtest) linearCtl()
 > ```
 
-### 6.2、analy文件夹
+### 6.2 analy文件夹
 
 #### Ⅰ. errdist.go： 运行错误信息有关的结构体与函数定义
 
@@ -417,13 +417,13 @@ able = 0
 > func (pf *PerfModule) anallyArray(data []float32) (min, max, average, aver95, aver99 float32) 
 > ```
 
-### 6.3、 include文件夹
+### 6.3 include文件夹
 
 #### Ⅰ.h264_nalu_spilt.h
 
 #### Ⅱ. type.h
 
-### 6.4、 lib文件夹
+### 6.4 lib文件夹
 
 #### Ⅰ. libh264bitstream.so.0
 
@@ -472,7 +472,7 @@ able = 0
 >// bToMb bit转Mb
 >func bToMb(b uint64) uint64 
 
-### 6.7、request文件夹
+### 6.7 request文件夹
 
 #### Ⅰ. fileSession.go
 
@@ -580,7 +580,7 @@ able = 0
 > func TextunBlockChanWrite(ch chan analy.ErrInfo, err analy.ErrInfo) 
 > ```
 
-### 6.8、script文件夹
+### 6.8 script文件夹
 
 #### Ⅰ. test.sh： 运行脚本
 
@@ -644,9 +644,9 @@ able = 0
 
 #### Ⅲ. xtest_example.toml文件
 
-### 6.9、testdata文件夹
+### 6.9 testdata文件夹
 
-### 6.10、util文件夹
+### 6.10 util文件夹
 
 #### Ⅰ charts.go： 绘制图表有关的函数定义
 
@@ -743,7 +743,7 @@ func CompFunc(flag int, i, j string) bool
 >// Stop 结束定时任务
 >func (stp *ScheduledTaskPool) Stop() 
 
-### 6.11、var文件夹
+### 6.11 var文件夹
 
 #### Ⅰ. cmd.go：命令行输入相关
 
