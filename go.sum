@@ -624,8 +624,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
-github.com/wcharczuk/go-chart v2.0.1+incompatible h1:0pz39ZAycJFF7ju/1mepnk26RLVLBCWz1STcD3doU0A=
-github.com/wcharczuk/go-chart v2.0.1+incompatible/go.mod h1:PF5tmL4EIx/7Wf+hEkpCqYi5He4u90sw+0+6FhrryuE=
+github.com/wcharczuk/go-chart v2.0.2-0.20190910040548-3a7bc5543113+incompatible h1:Bz/7IMIv+MmCANT7drP8zyxHH5xHC0/+smWpcJCCk4M=
+github.com/wcharczuk/go-chart v2.0.2-0.20190910040548-3a7bc5543113+incompatible/go.mod h1:PF5tmL4EIx/7Wf+hEkpCqYi5He4u90sw+0+6FhrryuE=
 github.com/xfyun/finder-go v0.0.0-20220331051723-e16091b3b281 h1:putQF33rNokbEJdbAkenv0yRnu+3O3DDsh/0LKAQjf8=
 github.com/xfyun/finder-go v0.0.0-20220331051723-e16091b3b281/go.mod h1:MZNvlmLYVYwE/M6fyjbB3uSW+2RmzgZFYl2w6+eQUbE=
 github.com/xfyun/flange v0.0.0-20220331071834-05b49d1403f6 h1:HOVTZRtQCYIM/7tOS3fElCP6n2ml8MJiWxWhhX/U/pc=

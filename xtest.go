@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 	"xtest/analy"
-	"xtest/resources"
 	"xtest/request"
+	"xtest/resources"
 	"xtest/util"
 	"xtest/var"
 )

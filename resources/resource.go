@@ -67,11 +67,12 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	if err != nil {
 		return errors.New("Pid Not Found! ")
 	}
+
+	var gpu string
 	processes, err := util.GpuProcesses()
 	if err != nil {
 		return errors.New("Nvidia-smi errors! ")
 	}
-	var gpu string
 	for _, p := range processes {
 		if p.Pid == pid {
 			gpu = p.UsedMemory
@@ -79,9 +80,9 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	}
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
-
 	c.CpuPer.Set(cpuPer)
 	c.MemPer.Set(float64(memPer))
+
 	r := Resource{
 		Mem:  float64(memPer),
 		Cpu:  cpuPer,

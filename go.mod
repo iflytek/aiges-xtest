@@ -8,7 +8,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/pterm/pterm v0.12.45
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/wcharczuk/go-chart v2.0.1+incompatible
+	github.com/wcharczuk/go-chart v2.0.2-0.20190910040548-3a7bc5543113+incompatible
 	github.com/xfyun/xsf v0.0.0-20220402010628-6507dace16c0
 	go.uber.org/atomic v1.9.0
 )
