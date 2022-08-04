@@ -63,12 +63,12 @@ perfLevel=0                     # 非会话模式默认0
                                 # 会话模式1:首结果(发送第一帧到最后一帧的性能)
                                 # 会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
 inputCmd = false 				# 切换为命令行输入，仅在非会话模式生效
-prometheus_switch = true  		# Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
-prometheus_port = 2117    # jbzhou5 Prometheus指标暴露端口
-plot = true  					# 绘制资源图， 默认开启
+prometheus_switch = true  		  # Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
+prometheus_port = 2117          #  Prometheus指标暴露端口
+plot = true  					          # 绘制资源图， 默认开启
 plot_file = "./log/line.png"    # 绘制图形保存路径
-file_sorted = 0  				# 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
-file_name_seq = "_" 			# 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
+file_sorted = 0  				        # 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
+file_name_seq = "_" 			      # 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
 [header]
 "appid" = "100IME"
 "uid" = "1234567890"
@@ -78,7 +78,7 @@ file_name_seq = "_" 			# 传入文件名分割方式 例如传入'_', 则1_2.txt
 "x" = 1
 
 [data]
-payload = "dataKey2"   			# 输入数据流配置段,多个数据流以";"分割， 如果开启了inputCmd， 该值会被清空
+payload = "dataKey2"   			    # 输入数据流配置段,多个数据流以";"分割， 如果开启了inputCmd， 该值会被清空
 expect = "dataKey3"             # 输出数据流配置段,多个数据流以";"分割
 
 [dataKey1]  # 输入数据流dataKey1描述
@@ -150,7 +150,7 @@ able = 0
   - ```"x" = 1```
 
 - ```[data]```
-  - ```payload = "dataKey2"``` ：输入数据流配置段,多个数据流以";"分割， jbzhou5 如果开启了inputCmd， 该值会被清空
+  - ```payload = "dataKey2"``` ：输入数据流配置段,多个数据流以";"分割，  如果开启了inputCmd， 该值会被清空
   - ```expect = "dataKey3"```：输出数据流配置段,多个数据流以";"分割
 
 - ```[dataKey1] ``` ：名称可自定义，主要用于在[data] 字段的payload属性中方便标记加载数据，输入数据流dataKey1描述
@@ -737,7 +737,7 @@ func CompFunc(flag int, i, j string) bool
 > // NewScheduledTaskPool 实例化一个任务池对象
 >func NewScheduledTaskPool() ScheduledTaskPool 
 >
->// Start 启动一个定时任务 jbzhou5
+>// Start 启动一个定时任务 
 >func (stp *ScheduledTaskPool) Start(d time.Duration, f func())
 >
 >// Stop 结束定时任务
@@ -813,12 +813,12 @@ func CompFunc(flag int, i, j string) bool
 >	ReqMode          int           // 0: 非会话模式, 1: 常规会话>模式 2.文本按行会话模式 3.文件会话模式
 >	LinearNs         int           // 并发模型线性增长时间,用于计>算并发增长斜率(单位：ns). default:0,瞬时并发压测.
 >	TestSub          string        // 测试业务sub, 缺省test
->	InputCmd         bool          // jbzhou5 非会话模式切换为命>令行输入
->	PrometheusSwitch bool          // jbzhou5 Prometheus写入开>关
-> PrometheusPort   int           // jbzhou5 Prometheus指标服务端口
-> Plot             bool          // jbzhou5 绘制图形开关
->	PlotFile         string        // jbzhou5 绘制图像保存路径
->	FileSorted       int           // jbzhou5 文件排序方式
+>	InputCmd         bool          //  非会话模式切换为命>令行输入
+>	PrometheusSwitch bool          //  Prometheus写入开>关
+> PrometheusPort   int           //  Prometheus指标服务端口
+> Plot             bool          //  绘制图形开关
+>	PlotFile         string        //  绘制图像保存路径
+>	FileSorted       int           //  文件排序方式
 >	FileNameSeq      string        // 文件名分割方式
 >	PerfConfigOn     bool          //true: 开启性能检测 false: >不开启性能检测
 >	PerfLevel        int           //非会话模式默认0
@@ -846,12 +846,12 @@ func CompFunc(flag int, i, j string) bool
 >	ErrAnaDst string
 >	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
 >
->	// jbzhou5 性能资源日志保存目录
+>	//  性能资源日志保存目录
 >	// ResourcesDst = "./"
->	// jbzhou5 Prometheus并发协程计数器
->	ServicePid     int // jbzhou5 Aiservice的PID号
+>	//  Prometheus并发协程计数器
+>	ServicePid     int //  Aiservice的PID号
 >	ConcurrencyCnt prometheus.Gauge
->	// jbzhou5 Prometheus监听参数
+>	//  Prometheus监听参数
 >	CpuPer prometheus.Gauge
 >	MemPer prometheus.Gauge
 >}
@@ -876,7 +876,7 @@ func CompFunc(flag int, i, j string) bool
 > // 解析下行流
 >func (c *Conf) secParseDStream(conf *utils.Configure) error
 >
->//jbzhou5 解析命令行输入的数据
+>// 解析命令行输入的数据
 >func (c *Conf) secParseCmd(conf *utils.Configure) error
 >
 > ```
