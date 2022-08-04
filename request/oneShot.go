@@ -1,12 +1,12 @@
 package request
 
 import (
-	xsfcli "git.iflytek.com/AIaaS/xsf/client"
 	"github.com/golang/protobuf/proto"
-	"protocol"
+	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"time"
 	"xtest/analy"
+	"xtest/protocol"
 	"xtest/util"
 	_var "xtest/var"
 )

@@ -3,16 +3,16 @@ package _var
 import (
 	"errors"
 	"fmt"
-	"git.iflytek.com/AIaaS/xsf/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/xfyun/xsf/utils"
 	"go.uber.org/atomic"
 	"io/ioutil"
 	"os"
-	"protocol"
 	"reflect"
 	"strconv"
 	"strings"
+	"xtest/protocol"
 	"xtest/util"
 )
 

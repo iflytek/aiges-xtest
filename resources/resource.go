@@ -1,4 +1,4 @@
-package prometheus
+package resources
 
 import (
 	"errors"

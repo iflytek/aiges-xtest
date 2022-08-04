@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	xsfcli "git.iflytek.com/AIaaS/xsf/client"
 	"github.com/pterm/pterm"
+	xsfcli "github.com/xfyun/xsf/client"
 	"sync"
 	"time"
 	"xtest/analy"
-	"xtest/prometheus"
+	"xtest/resources"
 	"xtest/request"
 	"xtest/util"
 	"xtest/var"
@@ -45,7 +45,7 @@ func (x *Xtest) Run() {
 	var wg sync.WaitGroup
 
 	// jbzhou5
-	r := prometheus.NewResources()     // 开启资源监听实例
+	r := resources.NewResources()       // 开启资源监听实例
 	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
 	if x.r.C.PrometheusSwitch {
 		go r.Serve(x.r.C.PrometheusPort) // jbzhou5 启动一个协程写入Prometheus

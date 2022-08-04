@@ -1,7 +1,7 @@
 package analy
 
 import (
-	"git.iflytek.com/AIaaS/xsf/utils"
+	"github.com/xfyun/xsf/utils"
 	"os"
 	"strconv"
 	"sync"

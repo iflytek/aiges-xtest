@@ -2,14 +2,14 @@ package request
 
 import (
 	"errors"
-	"frame"
-	xsfcli "git.iflytek.com/AIaaS/xsf/client"
 	"github.com/golang/protobuf/proto"
-	"protocol"
+	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"sync"
 	"time"
 	"xtest/analy"
+	"xtest/frame"
+	"xtest/protocol"
 	"xtest/util"
 	_var "xtest/var"
 )

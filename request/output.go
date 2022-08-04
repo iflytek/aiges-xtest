@@ -2,7 +2,7 @@ package request
 
 import (
 	"fmt"
-	"git.iflytek.com/AIaaS/xsf/utils"
+	"github.com/xfyun/xsf/utils"
 	"io/ioutil"
 	"os"
 	"sync"

@@ -18,6 +18,7 @@ perfLevel=0                     # 非会话模式默认0
 inputCmd = false                # jbzhou5 切换为命令行输入，仅在非会话模式生效
 prometheus_switch = true        # jbzhou5 Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
 prometheus_port = 2117          # jbzhou5 Prometheus指标暴露端口
+resource_record = "1;2;3"       # 选择监控哪些指标： 1：cpu 2：内存 3：gpu
 plot = true                     # jbzhou5 绘制资源图， 默认开启
 plot_file = "./log/line.png"    # jbzhou5 绘制图形保存路径
 file_sorted = 0                 # 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序

@@ -227,7 +227,7 @@
 > func (pf *PerfModule) anallyArray(data []float32) (min, max, average, aver95, aver99 float32) 
 > ```
 
-### 2.3、 inclue文件夹
+### 2.3、 include文件夹
 
 #### Ⅰ.h264_nalu_spilt.h
 
@@ -245,7 +245,7 @@
 > - result: 运行结果
 > - xtest*.log: Xtest运行日志
 
-### 2.6 prometheus文件夹
+### 2.6 resources文件夹
 #### Ⅰ. resource.go: 资源记录相关函数定义
 > ```go
 > // Resource 资源条目
@@ -888,3 +888,4 @@ able = 0
 1. 启动Aiservice，注意监听的端口是否有改变。
 2. 根据自己的AI模型修改xtest.toml文件，例如参数，测试轮数等配置，具体请参考说明六。
 3. 由于监听资源需要管理员权限，请保证本地已经安装**netstat**命令，然后执行： ```sudo ./xtest``` 或```sudo ./xtest -f *.toml ```命令启动， 否则资源文件将为空，但并不影响其他任务。
+4. GPU 监控为待开放功能，源码已实现，但要求用户拥有英伟达显卡监控（Nvidia-smi）

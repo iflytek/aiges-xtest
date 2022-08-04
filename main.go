@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	xsfcli "git.iflytek.com/AIaaS/xsf/client"
-	"git.iflytek.com/AIaaS/xsf/utils"
+	xsfcli "github.com/xfyun/xsf/client"
+	"github.com/xfyun/xsf/utils"
 	_var "xtest/var"
 )
 
