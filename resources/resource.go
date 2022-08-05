@@ -134,8 +134,8 @@ func (rs *Resources) Draw(dst string) error {
 		Vals: util.LinesData{
 			Title: "Resource Record",
 			BarValues: []util.LineYValue{
-				{"cpus", cpus},
-				{"mem", mems},
+				{"cpus(%)", cpus},
+				{"mem(%)", mems},
 			},
 		},
 		Dst:     dst,
@@ -156,7 +156,7 @@ func (rs *Resources) Stop() {
 // Dump 持久化日志
 func (rs *Resources) Dump() error {
 	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
-	_, err = f.WriteString("CPU,MEMORY,GPU,TIME\n")
+	_, err = f.WriteString("CPU(%),MEMORY(%),GPU(MB),TIME\n")
 	if err != nil {
 		return err
 	}
