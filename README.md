@@ -61,13 +61,13 @@ perfLevel=0                     # 非会话模式默认0
                                 # 会话模式0: 从发第一帧到最后一帧的性能
                                 # 会话模式1:首结果(发送第一帧到最后一帧的性能)
                                 # 会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
-inputCmd = false 				# 切换为命令行输入，仅在非会话模式生效
-prometheus_switch = true  		# Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
+inputCmd = false                # 切换为命令行输入，仅在非会话模式生效
+prometheus_switch = true        # Prometheus开关， 开启后开启双写，同时写入prometheus与本地日志
 prometheus_port = 2117          # jbzhou5 Prometheus指标暴露端口
-plot = true  					# 绘制资源图， 默认开启
+plot = true                     # 绘制资源图， 默认开启
 plot_file = "./log/line.png"    # 绘制图形保存路径
-file_sorted = 0  				# 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
-file_name_seq = "_" 			# 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
+file_sorted = 0                 # 传入文件是否排序， 0： 随机， 1： 升序， 2： 降序
+file_name_seq = "_"             # 传入文件名分割方式 例如传入'_', 则1_2.txt -> 1，2_2.txt -> 2, 为空或者传入非法则不处理
 [header]
 "appid" = "100IME"
 "uid" = "1234567890"
@@ -77,7 +77,7 @@ file_name_seq = "_" 			# 传入文件名分割方式 例如传入'_', 则1_2.txt
 "x" = 1
 
 [data]
-payload = "dataKey2"   			# 输入数据流配置段,多个数据流以";"分割， 如果开启了inputCmd， 该值会被清空
+payload = "dataKey2"            # 输入数据流配置段,多个数据流以";"分割， 如果开启了inputCmd， 该值会被清空
 expect = "dataKey3"             # 输出数据流配置段,多个数据流以";"分割
 
 [dataKey1]                      # 输入数据流dataKey1描述
