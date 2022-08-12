@@ -48,5 +48,6 @@ build-pack: install-goreleaser  ## build binaries by default
 	@echo "build xtest bin"
 	$(GORELEASER_BIN) build --snapshot --rm-dist  --timeout=1h
 
-build-release: SHELL:=/bin/bash
-
+build-release: install-goreleaser  ## build binaries by default
+	@echo "build xtest bin"
+	$(GORELEASER_BIN) release --timeout=1h  --release-notes=hack/release/Note.md --debug  --rm-dist
