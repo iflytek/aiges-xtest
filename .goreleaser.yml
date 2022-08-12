@@ -35,7 +35,6 @@ builds:
         - sudo cp -ar ./script/xtest.toml {{ dir .Path }}/
         - sudo cp -ar ./script/test.sh  {{ dir .Path }}/
         - sudo cp -ar ./lib/  {{ dir .Path }}/
-        - sudo env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{{ dir .Path }}/lib/
     binary: xtest
     goos:
       - linux
