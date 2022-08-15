@@ -8,7 +8,6 @@ GOTEST=$(GOCMD) unpack
 BINARY_NAME=xtest
 BINARY_LINUX=$(BINARY_NAME)-linux
 GORELEASER_BIN = $(shell pwd)/bin/goreleaser
-LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):./lib
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
