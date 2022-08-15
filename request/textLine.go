@@ -302,6 +302,11 @@ func (r *Request) TextsessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt
 		}
 
 		*rslt = append(*rslt, dataOut)
+		if dataOut.Code != 0 {
+			cli.Log.Errorw(dataOut.Err, "respData", resp.GetData()[0].Data)
+			analy.Perf.Record("", "", analy.DataTotal, analy.SessOnce, analy.DOWN, int(dataOut.Code), dataOut.Err)
+			return analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)}
+		}
 		analy.Perf.Record("", req.Handle(), analy.DataStatus(int(dataOut.Status)), analy.SessContinue, analy.DOWN, int(dataOut.Code), dataOut.Err)
 		cli.Log.Debugw("sessAIOut get resp result", "hdl", sid, "result", dataOut)
 		if dataOut.Status == protocol.LoaderOutput_END {

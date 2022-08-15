@@ -1,6 +1,7 @@
 package request
 
 import (
+	"errors"
 	"github.com/golang/protobuf/proto"
 	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
@@ -80,11 +81,18 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 
 	// 解析结果、输出落盘
 	dataOut := protocol.LoaderOutput{}
+
 	err = proto.Unmarshal(resp.GetData()[0].Data, &dataOut)
+
 	if err != nil {
 		cli.Log.Errorw("OneShotCall Resp Unmarshal fail", "err", err.Error(), "respData", resp.GetData()[0].Data)
 		analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.DOWN, -1, err.Error())
 		return analy.ErrInfo{ErrCode: -1, ErrStr: err}
+	}
+	if dataOut.Code != 0 {
+		cli.Log.Errorw(dataOut.Err, "respData", resp.GetData()[0].Data)
+		analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.DOWN, int(dataOut.Code), dataOut.Err)
+		return analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)}
 	}
 	analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.DOWN, int(dataOut.Code), dataOut.Err)
 	// get result
