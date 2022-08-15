@@ -31,7 +31,8 @@ builds:
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
         - mkdir -p {{ dir .Path }}/lib
-        - sudo cp ./lib/libh264bitstream.so.0 /usr/lib/
+        - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/
+        - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/libh264bitstream.so
       post:
         - sudo cp -ar ./script/xtest.toml {{ dir .Path }}/
         - sudo cp -ar ./script/test.sh  {{ dir .Path }}/
