@@ -30,7 +30,7 @@ builds:
       pre:
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
-        - mkdir -p {{ dir .Path }}/lib
+        - sudo mkdir -p {{ dir .Path }}/lib
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/libh264bitstream.so
       post:
@@ -50,7 +50,16 @@ builds:
       - -s -w
       - -linkmode external
 
-
+archives:
+  -
+   files:
+     - src: './lib/*'
+       dst: 'lib'
+       strip_parent: true
+       
+     - src: './script/*'
+       dst: 'script'
+       strip_parent: true
 # #        # Strip parent folders when adding files to the archive.
 # #        # Default: false
 # #        strip_parent: false
