@@ -31,11 +31,12 @@ builds:
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
         - mkdir -p {{ dir .Path }}/lib
+        - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/
+        - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/libh264bitstream.so
       post:
         - sudo cp -ar ./script/xtest.toml {{ dir .Path }}/
         - sudo cp -ar ./script/test.sh  {{ dir .Path }}/
         - sudo cp -ar ./lib/  {{ dir .Path }}/
-        - sudo env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{{ dir .Path }}/lib/
     binary: xtest
     goos:
       - linux
@@ -48,21 +49,6 @@ builds:
     ldflags:
       - -s -w
       - -linkmode external
-
-
-# #        # Strip parent folders when adding files to the archive.
-# #        # Default: false
-# #        strip_parent: false
-#      - src: './cgo/header/widget/*'
-#        dst: 'include'
-#        strip_parent: true
-#        # Strip parent folders when adding files to the archive.
-#        # Default: false
-#  - replacements:
-#      darwin: Darwin
-#      linux: Linux
-#      amd64: x86_64
-#      arm64: aarch64
 checksum:
   disable: true
   name_template: '{{ .ProjectName }}_checksums.txt'
@@ -74,4 +60,3 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-

@@ -1,3 +1,4 @@
+TOP_DIR := $(shell pwd)
 .PHONY: build-linux
 GO111MODULE=on
 GOPROXY=https://goproxy.cn
@@ -8,9 +9,8 @@ GOTEST=$(GOCMD) unpack
 BINARY_NAME=xtest
 BINARY_LINUX=$(BINARY_NAME)-linux
 GORELEASER_BIN = $(shell pwd)/bin/goreleaser
-
-
 SHELL = /usr/bin/env bash -o pipefail
+
 .SHELLFLAGS = -ec
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
@@ -48,5 +48,8 @@ build-pack: install-goreleaser  ## build binaries by default
 	@echo "build xtest bin"
 	$(GORELEASER_BIN) build --snapshot --rm-dist  --timeout=1h
 
-build-release: SHELL:=/bin/bash
-
+build-release: install-goreleaser  ## build binaries by default
+	@echo "build xtest bin"
+	$(GORELEASER_BIN) release --timeout=1h  --release-notes=hack/release/Note.md --debug  --rm-dist
+haha: 
+	echo $(LDFLAGS)
