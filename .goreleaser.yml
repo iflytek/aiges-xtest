@@ -49,6 +49,15 @@ builds:
     ldflags:
       - -s -w
       - -linkmode external
+archives:
+  -
+   files:
+     - src: './lib/*'
+       dst: 'lib'
+       strip_parent: true
+     - src: './script/*'
+       dst: 'script'
+       strip_parent: true
 checksum:
   disable: true
   name_template: '{{ .ProjectName }}_checksums.txt'
