@@ -57,9 +57,9 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	taddrs := c.Taddrs
 	port, err := strconv.Atoi(strings.Split(taddrs, ":")[1])
 	if err != nil {
-		return  err
+		return err
 	}
-	pid,  err := rs.DetectPort(port)
+	pid, err := rs.DetectPort(port)
 	if err != nil {
 		return err
 	}
@@ -67,17 +67,20 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	if err != nil {
 		return errors.New("Pid Not Found! ")
 	}
-
 	var gpu string
-	processes, err := util.GpuProcesses()
-	if err != nil {
-		return errors.New("Nvidia-smi errors! ")
-	}
-	for _, p := range processes {
-		if p.Pid == pid {
-			gpu = p.UsedMemory
+
+	if c.GpuMon {
+		processes, err := util.NVMLGpuProcesses()
+		if err != nil {
+			return errors.New("NVML lib errors! ")
+		}
+		for _, p := range processes {
+			if p.Pid == pid {
+				gpu = p.UsedMemory
+			}
 		}
 	}
+
 	memPer, _ := x.MemoryPercent()
 	cpuPer, _ := x.CPUPercent()
 	c.CpuPer.Set(cpuPer)
@@ -86,7 +89,7 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	r := Resource{
 		Mem:  float64(memPer),
 		Cpu:  cpuPer,
-		Gpu: gpu,
+		Gpu:  gpu,
 		Time: float64(time.Now().UnixMicro()),
 	}
 	rs.resourceChan <- r
@@ -174,11 +177,11 @@ func (rs *Resources) Dump() error {
 }
 
 // DetectPort 通过端口号得出进程
-func (rs *Resources) DetectPort(port int)  (int, error) {
+func (rs *Resources) DetectPort(port int) (int, error) {
 	var pid int
 	var err error
 	for _, tcp := range util.Tcp() {
-		if tcp.Port == int64(port) && tcp.State == "LISTEN"{
+		if tcp.Port == int64(port) && tcp.State == "LISTEN" {
 			pid, err = strconv.Atoi(tcp.Pid)
 			if err != nil {
 				return 0, err

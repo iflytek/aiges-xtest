@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/xml"
+	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 	"io/ioutil"
 	"log"
 	"os/exec"
@@ -383,6 +384,46 @@ func GpuProcesses() ([]ProcessInfoS, error) {
 	var processes []ProcessInfoS
 	for _, g := range x.Gpus {
 		processes = append(processes, g.Processes.ProcessInfos...)
+	}
+	return processes, nil
+}
+
+// NVMLGpuProcesses
+func NVMLGpuProcesses() ([]ProcessInfoS, error) {
+	var devices []*nvml.Device
+	count, err := nvml.GetDeviceCount()
+	if err != nil {
+		return nil, err
+	}
+	for i := uint(0); i < count; i++ {
+		device, err := nvml.NewDevice(i)
+		if err != nil {
+			log.Panicf("Error getting device %d: %v\n", i, err)
+		}
+		devices = append(devices, device)
+	}
+	var processes []ProcessInfoS
+
+	for i, device := range devices {
+		pInfo, err := device.GetAllRunningProcesses()
+		if err != nil {
+			log.Printf("Error getting device %d processes: %v\n", i, err)
+			return nil, err
+		}
+		if len(pInfo) == 0 {
+			return nil, nil
+		}
+		for j := range pInfo {
+			//fmt.Printf("%5v %5v %5v %5v %-5v\n",
+			//	i, pInfo[j].PID, pInfo[j].Type, pInfo[j].MemoryUsed, pInfo[j].Name)
+			p := ProcessInfoS{}
+			p.Pid = int(pInfo[j].PID)
+			p.UsedMemory = string(pInfo[j].MemoryUsed)
+			p.Type = ""
+			p.ProcessName = pInfo[j].Name
+			processes = append(processes, p)
+
+		}
 	}
 	return processes, nil
 }

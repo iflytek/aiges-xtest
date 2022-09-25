@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 	"github.com/pterm/pterm"
 	xsfcli "github.com/xfyun/xsf/client"
+	"log"
 	"sync"
 	"time"
 	"xtest/analy"
@@ -45,7 +47,7 @@ func (x *Xtest) Run() {
 	var wg sync.WaitGroup
 
 	// jbzhou5
-	r := resources.NewResources()       // 开启资源监听实例
+	r := resources.NewResources()      // 开启资源监听实例
 	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
 	if x.r.C.PrometheusSwitch {
 		go r.Serve(x.r.C.PrometheusPort) // jbzhou5 启动一个协程写入Prometheus
@@ -55,6 +57,12 @@ func (x *Xtest) Run() {
 		r.GenerateData()
 	}
 
+	err := nvml.Init()
+	defer nvml.Shutdown()
+	if err != nil {
+		log.Printf("can't get nvml lib..\n %s", err.Error())
+		x.r.C.GpuMon = false
+	}
 	// 启动一个系统资源定时任务
 	stp.Start(time.Microsecond*100, func() {
 		err := r.ReadMem(&x.r.C)

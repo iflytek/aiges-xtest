@@ -46,25 +46,25 @@ type Conf struct {
 	// [xtest]
 	Taddrs string
 	// [svcMode]
-	SvcId               string
-	SvcName             string        // dst service name
-	TimeOut             int           // 超时时间: ms, 对应加载器waitTime
-	LossDeviation       int           // 自身性能损耗误差, ms.
-	MultiThr            int           // 请求并发数
-	DropThr             int           // 下行数据异步输出线程数
-	LoopCnt             *atomic.Int64 // 请求总次数
-	ReqMode             int           // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
-	LinearNs            int           // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
-	TestSub             string        // 测试业务sub, 缺省test
-	InputCmd            bool          // jbzhou5 非会话模式切换为命令行输入
-	PrometheusSwitch    bool          // jbzhou5 Prometheus写入开关
-	PrometheusPort      int           // jbzhou5 Prometheus指标服务端口
-	Plot                bool          // jbzhou5 绘制图形开关
-	PlotFile            string        // jbzhou5 绘制图像保存路径
-	FileSorted          int           // jbzhou5 文件排序方式
-	FileNameSeq         string        // 文件名分割方式
-	PerfConfigOn        bool          //true: 开启性能检测 false: 不开启性能检测
-	PerfLevel           int           //非会话模式默认0
+	SvcId            string
+	SvcName          string        // dst service name
+	TimeOut          int           // 超时时间: ms, 对应加载器waitTime
+	LossDeviation    int           // 自身性能损耗误差, ms.
+	MultiThr         int           // 请求并发数
+	DropThr          int           // 下行数据异步输出线程数
+	LoopCnt          *atomic.Int64 // 请求总次数
+	ReqMode          int           // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
+	LinearNs         int           // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
+	TestSub          string        // 测试业务sub, 缺省test
+	InputCmd         bool          // jbzhou5 非会话模式切换为命令行输入
+	PrometheusSwitch bool          // jbzhou5 Prometheus写入开关
+	PrometheusPort   int           // jbzhou5 Prometheus指标服务端口
+	Plot             bool          // jbzhou5 绘制图形开关
+	PlotFile         string        // jbzhou5 绘制图像保存路径
+	FileSorted       int           // jbzhou5 文件排序方式
+	FileNameSeq      string        // 文件名分割方式
+	PerfConfigOn     bool          //true: 开启性能检测 false: 不开启性能检测
+	PerfLevel        int           //非会话模式默认0
 	//会话模式0: 从发第一帧到最后一帧的性能
 	//会话模式1:首结果(发送第一帧到最后一帧的性能)
 	//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
@@ -96,29 +96,31 @@ type Conf struct {
 	// jbzhou5 Prometheus监听参数
 	CpuPer prometheus.Gauge
 	MemPer prometheus.Gauge
+	// ybyang7 GPU 获取开关
+	GpuMon bool
 }
 
 func NewConf() Conf {
 	return Conf{
-		Taddrs:              "",
-		SvcId:               "s12345678",
-		SvcName:             "AIservice",            // dst service name
-		TimeOut:             1000,                   // 超时时间: ms, 对应加载器waitTime
-		LossDeviation:       50,                     // 自身性能损耗误差, ms.
-		MultiThr:            100,                    // 请求并发数
-		DropThr:             100,                    // 下行数据异步输出线程数
-		LoopCnt:             atomic.NewInt64(10000), // 请求总次数
-		ReqMode:             0,                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
-		LinearNs:            0,                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
-		TestSub:             "ase",                  // 测试业务sub, 缺省test
-		InputCmd:            false,                  // jbzhou5 非会话模式切换为命令行输入
-		PrometheusSwitch:    false,                  // jbzhou5 Prometheus写入开关
-		Plot:                true,                   // jbzhou5 绘制图形开关
-		PlotFile:            "./log/line.png",       // jbzhou5 绘制图像保存路径
-		FileSorted:          0,                      // jbzhou5 文件排序方式
-		FileNameSeq:         "/",                    // 文件名分割方式
-		PerfConfigOn:        false,                  //true: 开启性能检测 false: 不开启性能检测
-		PerfLevel:           0,                      //非会话模式默认0
+		Taddrs:           "",
+		SvcId:            "s12345678",
+		SvcName:          "AIservice",            // dst service name
+		TimeOut:          1000,                   // 超时时间: ms, 对应加载器waitTime
+		LossDeviation:    50,                     // 自身性能损耗误差, ms.
+		MultiThr:         100,                    // 请求并发数
+		DropThr:          100,                    // 下行数据异步输出线程数
+		LoopCnt:          atomic.NewInt64(10000), // 请求总次数
+		ReqMode:          0,                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
+		LinearNs:         0,                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
+		TestSub:          "ase",                  // 测试业务sub, 缺省test
+		InputCmd:         false,                  // jbzhou5 非会话模式切换为命令行输入
+		PrometheusSwitch: false,                  // jbzhou5 Prometheus写入开关
+		Plot:             true,                   // jbzhou5 绘制图形开关
+		PlotFile:         "./log/line.png",       // jbzhou5 绘制图像保存路径
+		FileSorted:       0,                      // jbzhou5 文件排序方式
+		FileNameSeq:      "/",                    // 文件名分割方式
+		PerfConfigOn:     false,                  //true: 开启性能检测 false: 不开启性能检测
+		PerfLevel:        0,                      //非会话模式默认0
 		//会话模式0: 从发第一帧到最后一帧的性能
 		//会话模式1:首结果(发送第一帧到最后一帧的性能)
 		//会话模式2:尾结果(发送最后一帧到收到最后一帧的性能)
@@ -159,6 +161,7 @@ func NewConf() Conf {
 			Name: "Xtest_MEM_Percent",
 			Help: "Xtest mem percent",
 		}),
+		GpuMon: true,
 	}
 }
 
@@ -404,6 +407,11 @@ func (c *Conf) secParseSvc(conf *utils.Configure) error {
 	// jbzhou5 文件名分割方式
 	if filenameSeq, err := conf.GetString(secTmp, "file_name_seq"); err == nil && filenameSeq != "" {
 		c.FileNameSeq = filenameSeq
+	}
+
+	// ybyang7 GPU开关
+	if gpMoon, err := conf.GetBool(secTmp, "gpuMon"); err == nil {
+		c.GpuMon = gpMoon
 	}
 
 	c.AsyncDrop = make(chan OutputMeta, c.MultiThr*10) // channel长度取并发数*10, channel满则同步写.
