@@ -1,4 +1,4 @@
-project_name: xtest 
+project_name: xtest
 gomod:
   # Proxy a module from proxy.golang.org, making the builds verifiable.
   # This will only be effective if running against a tag. Snapshots will ignore this setting.
@@ -16,27 +16,27 @@ gomod:
 before:
   hooks:
     # You may remove this if you don't use go modules.
-    -  go mod tidy
+    - go mod tidy
 builds:
   - env:
       - CGO_ENABLED=1
       - CC=x86_64-linux-gnu-gcc
       - CC_FOR_TARGET=gcc-x86_64-linux-gnu
       - PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig/
-      
+
     main: .
     id: xtest
     hooks:
       pre:
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
-        - mkdir -p {{ dir .Path }}/lib
+        - mkdir -p {{ .Path }}/lib
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/libh264bitstream.so
       post:
-        - sudo cp -ar ./script/xtest.toml {{ dir .Path }}/
-        - sudo cp -ar ./script/test.sh  {{ dir .Path }}/
-        - sudo cp -ar ./lib/  {{ dir .Path }}/
+        - sudo cp -ar ./script/xtest.toml {{  .Path }}/
+        - sudo cp -ar ./script/test.sh  {{  .Path }}/
+        - sudo cp -ar ./lib/  {{  .Path }}/
     binary: xtest
     goos:
       - linux
