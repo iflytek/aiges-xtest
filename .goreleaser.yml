@@ -60,3 +60,13 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+archives:
+  -
+    files:
+      - src: './lib/*'
+        dst: 'lib'
+        strip_parent: true
+
+      - src: './script/*'
+        dst: 'script'
+        strip_parent: true
