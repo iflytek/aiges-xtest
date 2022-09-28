@@ -16,7 +16,7 @@ gomod:
 before:
   hooks:
     # You may remove this if you don't use go modules.
-    - go mod tidy
+    -  go mod tidy
 builds:
   - env:
       - CGO_ENABLED=1
@@ -30,13 +30,13 @@ builds:
       pre:
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
-        - mkdir -p {{ .Path }}/lib
+        - mkdir -p {{ dir .Path }}/lib
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/
         - sudo cp ./lib/libh264bitstream.so.0 /usr/local/lib/libh264bitstream.so
       post:
-        - sudo cp -ar ./script/xtest.toml {{  .Path }}/
-        - sudo cp -ar ./script/test.sh  {{  .Path }}/
-        - sudo cp -ar ./lib/  {{  .Path }}/
+        - sudo cp -ar ./script/xtest.toml {{ dir .Path }}/
+        - sudo cp -ar ./script/test.sh  {{ dir .Path }}/
+        - sudo cp -ar ./lib/  {{ dir .Path }}/
     binary: xtest
     goos:
       - linux
