@@ -73,7 +73,7 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		case r.C.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
-			key := reqSid + "-" + outType + "-" + v.Meta.Name
+			key := reqSid + "-" + outType + "-" + v.Meta.Name + string(index)
 			r.downOutput(key, v.Data, cli.Log)
 		}
 	}
