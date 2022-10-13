@@ -17,7 +17,7 @@ func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
 			break // channel 关闭, 退出
 		}
 
-		key := output.Sid + "-" + output.Type + "-" + output.Name
+		key := output.Sid + "-" + output.Type + "-" + output.Name + "-" + string(output.Seq)
 		r.downOutput(key, output.Data, log)
 	}
 	wg.Done()
@@ -32,17 +32,18 @@ func (r *Request) downOutput(key string, data []byte, log *utils.Logger) {
 			return
 		}
 
-		tmp := []byte(key + ":")
-		tmp = append(tmp, data...)
-		tmp = append(tmp, byte('\n'))
-		wlen, err := fi.Write(tmp)
-		if err != nil || wlen != len(tmp) {
+		//tmp := []byte(key + ":")
+		//tmp = append(tmp, data...)
+		//tmp = append(tmp, byte('\n'))
+		wlen, err := fi.Write(data)
+		if err != nil || wlen != len(data) {
 			log.Errorw("downOutput Sync AppendFile fail", "err", err.Error(), "wlen", wlen, "key", key)
 			_ = fi.Close()
 			return
 		}
 		_ = fi.Close()
 	case 1: // 输出至目录OutputDst
+		fmt.Println("#################")
 		err := ioutil.WriteFile(r.C.OutputDst+"/"+key, data, os.ModePerm)
 		if err != nil {
 			log.Errorw("downOutput Sync WriteFile fail", "err", err.Error(), "key", key)

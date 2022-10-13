@@ -63,7 +63,7 @@ func (r *Request) TextCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo)
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, index, v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
 			key := reqSid + "-" + outType + "-" + v.Meta.Name

@@ -111,7 +111,7 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		}
 		select {
 		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, sessId,
-			outType, v.Meta.Attribute, v.Data}:
+			outType, v.Meta.Attribute, index, v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-name, value: data
 			key := sessId + "-" + outType + "-" + v.Meta.Name

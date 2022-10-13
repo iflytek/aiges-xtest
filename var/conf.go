@@ -39,6 +39,7 @@ type OutputMeta struct {
 	Sid  string            // sid
 	Type string            // 下行数据类型
 	Desc map[string]string // 数据描述
+	Seq  int64             // 下行数据seq
 	Data []byte            // 下行数据实体
 }
 
