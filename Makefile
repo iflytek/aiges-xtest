@@ -1,7 +1,7 @@
 TOP_DIR := $(shell pwd)
 .PHONY: build-linux
 GO111MODULE=on
-GOPROXY=https://goproxy.cn
+export GOPROXY=https://goproxy.cn
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
@@ -33,7 +33,7 @@ install-goreleaser: ## check license if not exist install go-lint tools
 	$(call go-get-tool,$(GORELEASER_BIN),github.com/goreleaser/goreleaser@v1.6.3)
 
 build:
-	mkdir bin
+	mkdir -p bin
 	$(GOBUILD) -v -o ./bin/xtest ./.
 	cp ./xtest.toml ./bin
 
