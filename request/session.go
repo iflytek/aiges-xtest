@@ -44,19 +44,19 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 	}
 	_ = r.sessAIExcp(cli, hdl, reqSid)
 	// 结果落盘
-	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
+	tmpMerge := make(map[int] /*streamId*/ *protocol.Payload)
 	for k, _ := range thrRslt {
 		for _, d := range thrRslt[k].Pl {
-			meta, exist := tmpMerge[d.Meta.Name]
+			meta, exist := tmpMerge[k]
 			if exist {
-				tmpMerge[d.Meta.Name].Data = append(meta.Data, d.Data...)
+				tmpMerge[k].Data = append(meta.Data, d.Data...)
 			} else {
-				tmpMerge[d.Meta.Name] = d
+				tmpMerge[k] = d
 			}
 		}
 	}
 
-	for _, v := range tmpMerge {
+	for seq, v := range tmpMerge {
 		var outType string = "invalidType"
 		switch v.Meta.DataType {
 		case protocol.MetaDesc_TEXT:
@@ -70,10 +70,10 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, reqSid, outType, v.Meta.Attribute, index, v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, reqSid, outType, v.Meta.Attribute, int64(seq), v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
-			key := reqSid + "-" + outType + "-" + v.Meta.Name + string(index)
+			key := reqSid + "-" + outType + "-" + v.Meta.Name + strconv.FormatInt(index, 10)
 			r.downOutput(key, v.Data, cli.Log)
 		}
 	}

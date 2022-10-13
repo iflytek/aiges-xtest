@@ -5,6 +5,7 @@ import (
 	"github.com/xfyun/xsf/utils"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
 			break // channel 关闭, 退出
 		}
 
-		key := output.Sid + "-" + output.Type + "-" + output.Name + "-" + string(output.Seq)
+		key := output.Sid + "-" + output.Type + "-" + output.Name + "-" + strconv.FormatInt(output.Seq, 10)
 		r.downOutput(key, output.Data, log)
 	}
 	wg.Done()
