@@ -19,6 +19,11 @@ func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
 		}
 
 		key := output.Sid + "-" + output.Type + "-" + output.Name + "-" + strconv.FormatInt(output.Seq, 10)
+		if output.Type == "image" {
+			key += ".jpg"
+		} else if output.Type == "text" {
+			key += ".txt"
+		}
 		r.downOutput(key, output.Data, log)
 	}
 	wg.Done()
@@ -44,7 +49,6 @@ func (r *Request) downOutput(key string, data []byte, log *utils.Logger) {
 		}
 		_ = fi.Close()
 	case 1: // 输出至目录OutputDst
-		fmt.Println("#################")
 		err := ioutil.WriteFile(r.C.OutputDst+"/"+key, data, os.ModePerm)
 		if err != nil {
 			log.Errorw("downOutput Sync WriteFile fail", "err", err.Error(), "key", key)
