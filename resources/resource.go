@@ -70,14 +70,9 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	var gpu string
 
 	if c.GpuMon {
-		processes, err := util.NVMLGpuProcesses()
+		gpu, err = LookUpGpu(pid)
 		if err != nil {
-			return errors.New("NVML lib errors! ")
-		}
-		for _, p := range processes {
-			if p.Pid == pid {
-				gpu = p.UsedMemory
-			}
+			return errors.New("Pid Not Found! ")
 		}
 	}
 

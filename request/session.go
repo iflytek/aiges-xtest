@@ -12,6 +12,7 @@ import (
 	"xtest/frame"
 	"xtest/protocol"
 	"xtest/util"
+	frameUtil "xtest/util/frame"
 	_var "xtest/var"
 )
 
@@ -183,7 +184,7 @@ func (r *Request) multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session
 	h264FrameSizes := make(map[int][]int)
 	for streamId, fileId := range indexs {
 		if r.C.UpStreams[streamId].DataType == protocol.MetaDesc_DataType(protocol.MetaData_VIDEO) {
-			h264FrameSizes[streamId] = GetH264Frames(r.C.UpStreams[streamId].DataList[fileId])
+			h264FrameSizes[streamId] = frameUtil.GetH264Frames(r.C.UpStreams[streamId].DataList[fileId])
 			cli.Log.Debugw("upstream get h264 frames size. ",
 				"frames", h264FrameSizes, "length", len(h264FrameSizes))
 		}
