@@ -61,11 +61,12 @@ func (x *Xtest) Run() {
 	}
 
 	err := nvml.Init()
-	defer nvml.Shutdown()
 	if err != nil {
 		log.Printf("can't get nvml lib..\n %s", err.Error())
 		x.r.C.GpuMon = false
 	}
+	defer nvml.Shutdown()
+
 	// 启动一个系统资源定时任务
 	stp.Start(time.Microsecond*100, func() {
 		err := r.ReadMem(&x.r.C)
