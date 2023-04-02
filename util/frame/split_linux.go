@@ -4,8 +4,8 @@
 package frameUtil
 
 /*
-#cgo CFLAGS: -I../include
-#cgo LDFLAGS: -L../lib -lh264bitstream
+#cgo CFLAGS: -I../../include
+#cgo LDFLAGS: -L../../lib -lh264bitstream
 #include "stdlib.h"
 #include <stdint.h>
 #include "stdio.h"
