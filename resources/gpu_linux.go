@@ -18,4 +18,5 @@ func LookUpGpu(pid int) (gpu string, err error) {
 			gpu = p.UsedMemory
 		}
 	}
+	return
 }
