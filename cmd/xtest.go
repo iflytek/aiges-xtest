@@ -40,6 +40,7 @@ func (x *Xtest) Run() {
 	}
 	// 启动异步输出打印&落盘
 	var rwg sync.WaitGroup
+	x.cli.Log.Debugw("dropThr", "length of dropThr", x.r.C.DropThr)
 	for i := 0; i < x.r.C.DropThr; i++ {
 		rwg.Add(1)
 		go x.r.DownStreamWrite(&rwg, x.cli.Log)
@@ -60,6 +61,7 @@ func (x *Xtest) Run() {
 
 	go util.ProgressShow(x.r.C.LoopCnt, x.r.C.LoopCnt.Load())
 
+	x.cli.Log.Debugw("multiThr", "length of multiThr", x.r.C.MultiThr)
 	for i := 0; i < x.r.C.MultiThr; i++ {
 		wg.Add(1)
 		go func() {

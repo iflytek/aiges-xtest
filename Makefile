@@ -1,6 +1,6 @@
 TOP_DIR := $(shell pwd)
 .PHONY: build-linux
-GO111MODULE=on
+export GO111MODULE=on
 export GOPROXY=https://goproxy.cn
 GOCMD=go
 GOBUILD=$(GOCMD) build

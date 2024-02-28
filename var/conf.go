@@ -250,8 +250,9 @@ func (c *Conf) secParseEp(conf *utils.Configure) error {
 	return nil
 }
 
-//解析每一个数据字段
+// 解析每一个数据字段
 func (c *Conf) secParsePl(conf *utils.Configure) error {
+	fmt.Println("payloads: ", c.Payload)
 	for _, sec := range c.Payload {
 		meta := InputMeta{}
 		meta.Name, _ = conf.GetString(sec, "name")
@@ -551,7 +552,7 @@ func (c *Conf) secParseDStream(conf *utils.Configure) error {
 	return nil
 }
 
-//jbzhou5 解析命令行输入的数据
+// jbzhou5 解析命令行输入的数据
 func (c *Conf) secParseCmd(conf *utils.Configure) error {
 	meta := InputMeta{}
 	meta.Name = "CMD"
