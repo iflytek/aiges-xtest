@@ -2,8 +2,6 @@ package request
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
-	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"sync"
 	"time"
@@ -12,6 +10,9 @@ import (
 	"xtest/protocol"
 	"xtest/util"
 	_var "xtest/var"
+
+	"github.com/golang/protobuf/proto"
+	xsfcli "github.com/xfyun/xsf/client"
 )
 
 func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
@@ -118,7 +119,7 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 	resp, ecode, err := caller.SessionCall(xsfcli.CREATE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 	if err != nil {
 		cli.Log.Errorw("sessAIIn Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
-		analy.Perf.Record(reqSid, resp.Handle(), analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
+		analy.Perf.Record(reqSid, "", analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
 		return hdl, status, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err}
 	}
 	hdl = resp.Session()
@@ -130,8 +131,8 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 	errChan := make(chan analy.ErrInfo, 1) // 仅保存首个错误码;
 	defer close(errChan)
 	var rwg sync.WaitGroup
-
-	r.FilemultiUpStream(cli, &rwg, hdl, thrRslt, thrLock, errChan)
+	rwg.Add(1)
+	go r.FilemultiUpStream(cli, &rwg, hdl, reqSid, thrRslt, thrLock, errChan)
 
 	rwg.Wait() // 异步协程上行数据交互结束
 	select {
@@ -148,96 +149,104 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 	return
 }
 
-func (r *Request) FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
+func (r *Request) FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session, reqSid string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
 	// jbzhou5 并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
 	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer swg.Done()
 
-	for dataId := 1; dataId <= len(r.C.UpStreams[0].DataList); dataId++ {
+	seq := 1
+	seqNo := 1
+	for i, payload := range r.C.UpStreams {
+		for dataId := 1; dataId <= len(payload.DataList); dataId++ {
+			sendData := payload.DataList[dataId-1]
+			sTime := time.Now()
+			seqNo++
 
-		println("send data ")
+			req := xsfcli.NewReq()
+			req.SetParam("SeqNo", strconv.Itoa(seqNo))
+			req.SetParam("baseId", "0")
+			req.SetParam("version", "v2")
+			req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
+			_ = req.Session(session)
+			dataIn := protocol.LoaderInput{}
+			dataIn.Headers = make(map[string]string)
+			dataIn.Headers["sid"] = reqSid
+			dataIn.SyncId = int32(seq)
+			upStatus := protocol.EngInputData_CONTINUE
+			if i == len(r.C.UpStreams)-1 && dataId == len(payload.DataList) {
+				upStatus = protocol.EngInputData_END
+			}
+			desc := make(map[string]string)
+			for dk, dv := range payload.DataDesc {
+				desc[dk] = dv
+			}
+			md := protocol.MetaDesc{
+				Name:      payload.Name,
+				DataType:  payload.DataType,
+				Attribute: desc,
+			}
+			md.Attribute["seq"] = strconv.Itoa(seq)
+			seq++
+			md.Attribute["status"] = strconv.Itoa(int(upStatus))
+			inputmeta := protocol.Payload{Meta: &md, Data: sendData}
+			dataIn.Pl = append(dataIn.Pl, &inputmeta)
+			input, err := proto.Marshal(&dataIn)
+			if err != nil {
+				cli.Log.Errorw("multiUpStream marshal create request fail", "err", err.Error(), "params", dataIn.Params)
+				r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
+				return
+			}
 
-		sendData := r.C.UpStreams[0].DataList[dataId-1]
-		sTime := time.Now()
+			rd := xsfcli.NewData()
+			rd.Append(input)
+			req.AppendData(rd)
+			caller := xsfcli.NewCaller(cli)
 
-		req := xsfcli.NewReq()
-		req.SetParam("baseId", "0")
-		req.SetParam("version", "v2")
-		req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
-		_ = req.Session(session)
-		dataIn := protocol.LoaderInput{}
-		dataIn.SyncId = int32(dataId)
-		upStatus := protocol.EngInputData_CONTINUE
-		if dataId == len(r.C.UpStreams[0].DataList) {
-			upStatus = protocol.EngInputData_END
+			analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.UP, 0, "")
+
+			resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
+			if err != nil && ecode != frame.AigesErrorEngInactive {
+				cli.Log.Errorw("multiUpStream Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
+				r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err})
+				analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(ecode), err.Error())
+				return
+			}
+			// 下行结果输出
+			dataOut := protocol.LoaderOutput{}
+			err = proto.Unmarshal(resp.GetData()[0].Data, &dataOut)
+			if err != nil {
+				cli.Log.Errorw("multiUpStream Resp Unmarshal fail", "err", err.Error(), "respData", resp.GetData()[0].Data)
+				r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
+				return
+			}
+
+			switch dataOut.Code {
+			case 0: // nothing to do
+			case frame.AigesErrorEngInactive:
+				return
+			default:
+				cli.Log.Errorw("multiUpStream get engine err", "err", dataOut.Err, "code", dataOut.Code, "params", dataIn.Params)
+				r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)})
+				analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(dataOut.Code), dataOut.Err)
+				return // engine err but not 10101
+			}
+
+			// 同步下行数据
+			if len(dataOut.Pl) > 0 {
+				(*sm).Lock()
+				*pm = append(*pm, dataOut)
+				cli.Log.Debugw("multiUpStream get resp result", "hdl", session, "result", dataOut)
+				(*sm).Unlock()
+				analy.Perf.Record("", req.Handle(), analy.DataStatus(int(dataOut.Status)), analy.SessContinue, analy.DOWN, 0, "")
+			}
+			if dataOut.Status == protocol.LoaderOutput_END {
+				return // last result
+			}
+
+			// wait ms.动态调整校准上行数据实时率, 考虑其他接口耗时.
+			r.FilertCalibration(seq, r.C.UpStreams[i].UpInterval, sTime)
 		}
-		desc := make(map[string]string)
-		for dk, dv := range r.C.UpStreams[0].DataDesc {
-			desc[dk] = dv
-		}
-		md := protocol.MetaDesc{
-			Name:      r.C.UpStreams[0].Name,
-			DataType:  r.C.UpStreams[0].DataType,
-			Attribute: desc}
-		md.Attribute["seq"] = strconv.Itoa(dataId)
-		md.Attribute["status"] = strconv.Itoa(int(upStatus))
-		inputmeta := protocol.Payload{Meta: &md, Data: sendData}
-		dataIn.Pl = append(dataIn.Pl, &inputmeta)
-		input, err := proto.Marshal(&dataIn)
-		if err != nil {
-			cli.Log.Errorw("multiUpStream marshal create request fail", "err", err.Error(), "params", dataIn.Params)
-			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
-			return
-		}
-
-		rd := xsfcli.NewData()
-		rd.Append(input)
-		req.AppendData(rd)
-		caller := xsfcli.NewCaller(cli)
-
-		analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.UP, 0, "")
-
-		resp, ecode, err := caller.SessionCall(xsfcli.CONTINUE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
-		if err != nil && ecode != frame.AigesErrorEngInactive {
-			cli.Log.Errorw("multiUpStream Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
-			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err})
-			analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(ecode), err.Error())
-			return
-		}
-		// 下行结果输出
-		dataOut := protocol.LoaderOutput{}
-		err = proto.Unmarshal(resp.GetData()[0].Data, &dataOut)
-		if err != nil {
-			cli.Log.Errorw("multiUpStream Resp Unmarshal fail", "err", err.Error(), "respData", resp.GetData()[0].Data)
-			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
-			return
-		}
-
-		switch dataOut.Code {
-		case 0: // nothing to do
-		case frame.AigesErrorEngInactive:
-			return
-		default:
-			cli.Log.Errorw("multiUpStream get engine err", "err", dataOut.Err, "code", dataOut.Code, "params", dataIn.Params)
-			r.FileunBlockChanWrite(errchan, analy.ErrInfo{ErrCode: int(dataOut.Code), ErrStr: errors.New(dataOut.Err)})
-			analy.Perf.Record("", req.Handle(), analy.DataContinue, analy.SessContinue, analy.DOWN, int(dataOut.Code), dataOut.Err)
-			return // engine err but not 10101
-		}
-
-		// 同步下行数据
-		if len(dataOut.Pl) > 0 {
-			(*sm).Lock()
-			*pm = append(*pm, dataOut)
-			cli.Log.Debugw("multiUpStream get resp result", "hdl", session, "result", dataOut)
-			(*sm).Unlock()
-			analy.Perf.Record("", req.Handle(), analy.DataStatus(int(dataOut.Status)), analy.SessContinue, analy.DOWN, 0, "")
-		}
-		if dataOut.Status == protocol.LoaderOutput_END {
-			return // last result
-		}
-
-		// wait ms.动态调整校准上行数据实时率, 考虑其他接口耗时.
-		r.FilertCalibration(dataId, r.C.UpStreams[0].UpInterval, sTime)
 	}
 
 }
@@ -257,14 +266,18 @@ func (r *Request) FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt
 	r.C.ConcurrencyCnt.Add(1)
 	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
 	// loop read downstream result
+	seqNo := 1
 	for {
+		seqNo++
 		req := xsfcli.NewReq()
+		req.SetParam("SeqNo", strconv.Itoa(seqNo))
 		req.SetParam("baseId", "0")
 		req.SetParam("version", "v2")
 		req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))
-		_ = req.Session(sid)
+		_ = req.Session(hdl)
 		dataIn := protocol.LoaderInput{}
-
+		dataIn.Headers = make(map[string]string)
+		dataIn.Headers["sid"] = sid
 		input, err := proto.Marshal(&dataIn)
 		if err != nil {
 			cli.Log.Errorw("sessAIOut marshal create request fail", "err", err.Error(), "params", dataIn.Params)
