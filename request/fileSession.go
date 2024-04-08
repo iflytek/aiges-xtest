@@ -2,8 +2,6 @@ package request
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
-	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"sync"
 	"time"
@@ -12,6 +10,9 @@ import (
 	"xtest/protocol"
 	"xtest/util"
 	_var "xtest/var"
+
+	"github.com/golang/protobuf/proto"
+	xsfcli "github.com/xfyun/xsf/client"
 )
 
 func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
@@ -118,7 +119,7 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 	resp, ecode, err := caller.SessionCall(xsfcli.CREATE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 	if err != nil {
 		cli.Log.Errorw("sessAIIn Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
-		analy.Perf.Record(reqSid, resp.Handle(), analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
+		analy.Perf.Record(reqSid, "", analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
 		return hdl, status, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err}
 	}
 	hdl = resp.Session()
