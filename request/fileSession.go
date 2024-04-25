@@ -63,10 +63,15 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{reqSid, outType, v.Meta.Name, v.Meta.Attribute, index, v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
-			key := reqSid + "-" + outType + "-" + v.Meta.Name
+			key := reqSid + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
+			if outType == "image" {
+				key += ".jpg"
+			} else if outType == "text" {
+				key += ".txt"
+			}
 			r.downOutput(key, v.Data, cli.Log)
 		}
 	}

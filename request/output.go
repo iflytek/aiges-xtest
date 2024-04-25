@@ -3,15 +3,14 @@ package request
 import (
 	"fmt"
 	"github.com/xfyun/xsf/utils"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
 
 // 下行数据异步落盘或打印
 func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
-
 	for {
 		output, alive := <-r.C.AsyncDrop
 		if !alive {
@@ -24,6 +23,7 @@ func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
 		} else if output.Type == "text" {
 			key += ".txt"
 		}
+
 		r.downOutput(key, output.Data, log)
 	}
 	wg.Done()
@@ -38,9 +38,6 @@ func (r *Request) downOutput(key string, data []byte, log *utils.Logger) {
 			return
 		}
 
-		//tmp := []byte(key + ":")
-		//tmp = append(tmp, data...)
-		//tmp = append(tmp, byte('\n'))
 		wlen, err := fi.Write(data)
 		if err != nil || wlen != len(data) {
 			log.Errorw("downOutput Sync AppendFile fail", "err", err.Error(), "wlen", wlen, "key", key)
@@ -49,7 +46,7 @@ func (r *Request) downOutput(key string, data []byte, log *utils.Logger) {
 		}
 		_ = fi.Close()
 	case 1: // 输出至目录OutputDst
-		err := ioutil.WriteFile(r.C.OutputDst+"/"+key, data, os.ModePerm)
+		err := os.WriteFile(filepath.Join(r.C.OutputDst, key), data, os.ModePerm)
 		if err != nil {
 			log.Errorw("downOutput Sync WriteFile fail", "err", err.Error(), "key", key)
 			return
