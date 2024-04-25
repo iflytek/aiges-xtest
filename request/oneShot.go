@@ -110,11 +110,15 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 			outType = "video"
 		}
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, sessId,
-			outType, v.Meta.Attribute, index, v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: sessId, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-name, value: data
-			key := sessId + "-" + outType + "-" + v.Meta.Name
+			key := sessId + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
+			if outType == "image" {
+				key += ".jpg"
+			} else if outType == "text" {
+				key += ".txt"
+			}
 			r.downOutput(key, v.Data, cli.Log)
 		}
 	}

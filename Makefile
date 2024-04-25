@@ -35,7 +35,6 @@ install-goreleaser: ## check license if not exist install go-lint tools
 build:
 	mkdir -p bin
 	$(GOBUILD) -v -o ./bin/xtest ./cmd
-	cp ./xtest.toml ./bin
 
 clean:
 	rm -rf bin dist

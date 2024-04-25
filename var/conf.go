@@ -350,7 +350,7 @@ func (c *Conf) secParseSvc(conf *utils.Configure) error {
 	}
 	c.DropThr = c.MultiThr
 	if cnt, err := conf.GetInt64(secTmp, "loopCnt"); err == nil {
-		c.LoopCnt.Store(int64(cnt))
+		c.LoopCnt.Store(cnt)
 	}
 
 	if perfOn, err := conf.GetBool(secTmp, "perfOn"); err == nil {
@@ -539,7 +539,7 @@ func (c *Conf) secParseDStream(conf *utils.Configure) error {
 				return err
 			}
 		}
-		err = os.MkdirAll(c.OutputDst, os.ModeDir)
+		err = os.MkdirAll(c.OutputDst, os.ModePerm)
 		if err != nil {
 			return err
 		}

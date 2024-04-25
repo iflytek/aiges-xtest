@@ -1,7 +1,6 @@
 package request
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/golang/protobuf/proto"
 	xsfcli "github.com/xfyun/xsf/client"
@@ -18,9 +17,6 @@ import (
 
 func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	// 下行结果缓存
-
-	data, _ := json.Marshal(r.C.UpStreams)
-	println(string(data))
 	var indexs []int = make([]int, 0, len(r.C.UpStreams))
 	for _, v := range r.C.UpStreams {
 		streamIndex := index % int64(len(v.DataList))
@@ -45,21 +41,21 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 	}
 	_ = r.sessAIExcp(cli, hdl, reqSid)
 	// 结果落盘
-	tmpMerge := make(map[int] /*streamId*/ *protocol.Payload)
+	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
 	cli.Log.Debugw("length of thrRslt", "length", len(thrRslt))
-	for k, _ := range thrRslt {
+	for k := range thrRslt {
 		for _, d := range thrRslt[k].Pl {
-			meta, exist := tmpMerge[k]
+			meta, exist := tmpMerge[d.Meta.Name]
 			if exist {
-				tmpMerge[k].Data = append(meta.Data, d.Data...)
+				meta.Data = append(meta.Data, d.Data...)
 			} else {
-				tmpMerge[k] = d
+				tmpMerge[d.Meta.Name] = d
 			}
 		}
 	}
 
-	for seq, v := range tmpMerge {
-		var outType string = "invalidType"
+	for _, v := range tmpMerge {
+		var outType = "invalidType"
 		switch v.Meta.DataType {
 		case protocol.MetaDesc_TEXT:
 			outType = "text"
@@ -72,10 +68,15 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{v.Meta.Name, reqSid, outType, v.Meta.Attribute, int64(seq), v.Data}:
+		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
-			key := reqSid + "-" + outType + "-" + v.Meta.Name + strconv.FormatInt(index, 10)
+			key := reqSid + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
+			if outType == "image" {
+				key += ".jpg"
+			} else if outType == "text" {
+				key += ".txt"
+			}
 			r.downOutput(key, v.Data, cli.Log)
 		}
 	}
@@ -130,7 +131,7 @@ func (r *Request) sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol
 	resp, ecode, err := caller.SessionCall(xsfcli.CREATE, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
 	if err != nil {
 		cli.Log.Errorw("sessAIIn Create request fail", "err", err.Error(), "code", ecode, "params", dataIn.Params)
-		analy.Perf.Record(reqSid, resp.Handle(), analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
+		analy.Perf.Record(reqSid, "", analy.DataBegin, analy.SessBegin, analy.DOWN, int(ecode), err.Error())
 		return hdl, status, analy.ErrInfo{ErrCode: int(ecode), ErrStr: err}
 	}
 	hdl = resp.Session()
@@ -215,9 +216,7 @@ func (r *Request) multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session
 			if dataSendLen[streamId] >= len(r.C.UpStreams[streamId].DataList[fileId]) {
 				continue // 该上行数据流已发送完毕
 			}
-			//if dataSendLen[streamId] == 0 {
-			//	upStatus = protocol.EngInputData_BEGIN
-			//}
+
 			if dataSendLen[streamId]+size >= len(r.C.UpStreams[streamId].DataList[fileId]) {
 				size = len(r.C.UpStreams[streamId].DataList[fileId]) - dataSendLen[streamId]
 				upStatus = protocol.EngInputData_END
