@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"strconv"
 )
 
 type NvidiaSmiLog struct {
@@ -398,7 +399,26 @@ func NVMLGpuProcesses() ([]ProcessInfoS, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	filterDeviceIds := make(map[int]bool)
+	filteredDevices := os.Getenv("FILTER_DEVICES")
+	if filteredDevices != "" {
+		for _, s := range strings.Split(filteredDevices, ",") {
+			i, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				log.Printf("ERROR: failed to parse filtered_devices, %s", err.Error())
+				continue
+			}
+
+			filterDeviceIds[i] = true
+		}
+	}
+
 	for i := uint(0); i < count; i++ {
+		if filterDeviceIds[i] {
+			continue
+		}
+
 		device, err := nvml.NewDevice(i)
 		if err != nil {
 			log.Panicf("Error getting device %d: %v\n", i, err)
