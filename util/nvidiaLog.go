@@ -8,8 +8,10 @@ import (
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 type NvidiaSmiLog struct {
@@ -400,7 +402,7 @@ func NVMLGpuProcesses() ([]ProcessInfoS, error) {
 		return nil, err
 	}
 
-	filterDeviceIds := make(map[int]bool)
+	filterDeviceIds := make(map[uint]bool)
 	filteredDevices := os.Getenv("FILTER_DEVICES")
 	if filteredDevices != "" {
 		for _, s := range strings.Split(filteredDevices, ",") {
@@ -410,7 +412,7 @@ func NVMLGpuProcesses() ([]ProcessInfoS, error) {
 				continue
 			}
 
-			filterDeviceIds[i] = true
+			filterDeviceIds[uint(i)] = true
 		}
 	}
 
