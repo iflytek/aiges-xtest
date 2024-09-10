@@ -159,8 +159,7 @@ func (r *Request) TextmultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, ses
 	sendDatalist := strings.Split(string(r.C.UpStreams[0].DataList[0]), "\n")
 	println(len(sendDatalist))
 	for dataId := 1; dataId <= len(sendDatalist); dataId++ {
-		println("hhahaha", sendDatalist[dataId-1])
-
+		println(sendDatalist[dataId-1])
 		sendData := sendDatalist[dataId-1]
 		sTime := time.Now()
 
