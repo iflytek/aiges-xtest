@@ -8,7 +8,10 @@ import (
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 )
 
 type NvidiaSmiLog struct {
@@ -398,7 +401,26 @@ func NVMLGpuProcesses() ([]ProcessInfoS, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	filterDeviceIds := make(map[uint]bool)
+	filteredDevices := os.Getenv("FILTER_DEVICES")
+	if filteredDevices != "" {
+		for _, s := range strings.Split(filteredDevices, ",") {
+			i, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				log.Printf("ERROR: failed to parse filtered_devices, %s", err.Error())
+				continue
+			}
+
+			filterDeviceIds[uint(i)] = true
+		}
+	}
+
 	for i := uint(0); i < count; i++ {
+		if filterDeviceIds[i] {
+			continue
+		}
+
 		device, err := nvml.NewDevice(i)
 		if err != nil {
 			log.Panicf("Error getting device %d: %v\n", i, err)
