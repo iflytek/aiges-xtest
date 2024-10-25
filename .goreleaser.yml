@@ -28,6 +28,7 @@ builds:
     id: xtest
     hooks:
       pre:
+        - sudo apt-get update
         - sudo apt-get install -y libnuma-dev
         - sudo apt-get install -y net-tools
         - mkdir -p {{ dir .Path }}/lib
