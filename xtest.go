@@ -1,18 +1,17 @@
-//go:build !linux
-
 package main
 
 import (
 	"fmt"
-	"github.com/pterm/pterm"
-	xsfcli "github.com/xfyun/xsf/client"
 	"sync"
 	"time"
 	"xtest/analy"
 	"xtest/request"
 	"xtest/resources"
 	"xtest/util"
-	"xtest/var"
+	_var "xtest/var"
+
+	"github.com/pterm/pterm"
+	xsfcli "github.com/xfyun/xsf/client"
 )
 
 type Xtest struct {

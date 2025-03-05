@@ -9,9 +9,6 @@ atomicgo.dev/keyboard/keys
 # github.com/BurntSushi/toml v0.3.1
 ## explicit
 github.com/BurntSushi/toml
-# github.com/NVIDIA/gpu-monitoring-tools v0.0.0-20211102125545-5a2c58442e48
-## explicit; go 1.14
-github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml
 # github.com/StackExchange/wmi v1.2.1
 ## explicit; go 1.13
 github.com/StackExchange/wmi
