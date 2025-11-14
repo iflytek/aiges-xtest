@@ -19,7 +19,7 @@ func NewScheduledTaskPool() ScheduledTaskPool {
 	}
 }
 
-// Start 启动一个定时任务 jbzhou5
+// Start 启动一个定时任务
 func (stp *ScheduledTaskPool) Start(d time.Duration, f func()) {
 	stp.Size++
 	stp.wg.Add(1)

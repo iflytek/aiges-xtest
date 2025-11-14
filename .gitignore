@@ -2,3 +2,5 @@ log/
 testdata/
 bin/
 .idea
+.vscode
+xtest

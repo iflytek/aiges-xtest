@@ -1,10 +1,11 @@
 package analy
 
 import (
-	"github.com/xfyun/xsf/utils"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/xfyun/xsf/utils"
 )
 
 /*
@@ -66,7 +67,7 @@ func (eda *errDistAnalyser) count() {
 			break
 		}
 
-		cnt, _ := eda.errCnt[err.ErrCode]
+		cnt := eda.errCnt[err.ErrCode]
 		eda.errCnt[err.ErrCode] = cnt + 1
 		eda.errDsc[err.ErrCode] = err.ErrStr
 	}
@@ -74,7 +75,7 @@ func (eda *errDistAnalyser) count() {
 	// 临时存储区数据同步
 	eda.errMutex.Lock()
 	for _, v := range eda.errTmp {
-		cnt, _ := eda.errCnt[v.ErrCode]
+		cnt := eda.errCnt[v.ErrCode]
 		eda.errCnt[v.ErrCode] = cnt + 1
 		eda.errDsc[v.ErrCode] = v.ErrStr
 	}

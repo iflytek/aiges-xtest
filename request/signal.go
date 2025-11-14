@@ -20,8 +20,8 @@ func (r *Request) SigRegister() {
 				// 当前正在进行的请求或会话持续请求至正常结束, 剩余请求清零
 				r.C.LoopCnt.Store(0)
 			case syscall.SIGINT:
-				//_var.LoopCnt.Store(0)
-				fmt.Println("\nSIGINT\n")
+				//conf.LoopCnt.Store(0)
+				fmt.Println("\nSIGINT")
 				// TODO 可区别于SIGTERM, 当前进行的会话暴力结束,不计入统计数据,防止会话最长时间等待(eg: iat 60s)
 			}
 		}

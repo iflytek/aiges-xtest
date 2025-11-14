@@ -3,18 +3,19 @@ package resources
 import (
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	dto "github.com/prometheus/client_model/go"
-	utilProcess "github.com/shirou/gopsutil/process"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"xtest/conf"
 	"xtest/util"
-	_var "xtest/var"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
+	utilProcess "github.com/shirou/gopsutil/process"
 )
 
 type Resource struct {
@@ -53,7 +54,7 @@ func (rs *Resources) Serve(port int) error {
 }
 
 // ReadMem 获取内存使用, 传入AiService的PID
-func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
+func (rs *Resources) ReadMem(c *conf.Conf) (err error) {
 	taddrs := c.Taddrs
 	port, err := strconv.Atoi(strings.Split(taddrs, ":")[1])
 	if err != nil {
@@ -65,14 +66,14 @@ func (rs *Resources) ReadMem(c *_var.Conf) (err error) {
 	}
 	x, err := utilProcess.NewProcess(int32(pid))
 	if err != nil {
-		return errors.New("Pid Not Found! ")
+		return errors.New("pid not found")
 	}
 	var gpu string
 
 	if c.GpuMon {
 		gpu, err = LookUpGpu(pid)
 		if err != nil {
-			return errors.New("Pid Not Found! ")
+			return errors.New("pid not found")
 		}
 	}
 
@@ -132,8 +133,8 @@ func (rs *Resources) Draw(dst string) error {
 		Vals: util.LinesData{
 			Title: "Resource Record",
 			BarValues: []util.LineYValue{
-				{"cpus(%)", cpus},
-				{"mem(%)", mems},
+				{Name: "cpus(%)", Values: cpus},
+				{Name: "mem(%)", Values: mems},
 			},
 		},
 		Dst:     dst,
@@ -153,21 +154,24 @@ func (rs *Resources) Stop() {
 
 // Dump 持久化日志
 func (rs *Resources) Dump() error {
-	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, err := os.OpenFile(outputResourceFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close() // nolint
+
 	_, err = f.WriteString("CPU(%),MEMORY(%),GPU(MB),TIME\n")
 	if err != nil {
 		return err
 	}
+
 	for _, r := range rs.resources {
-		_, err = f.WriteString(fmt.Sprintf("%f,%f,%s,%s\n", r.Cpu, r.Mem, r.Gpu, time.UnixMicro(int64(r.Time)).Format("2006-01-02 15:04:05.000")))
+		_, err = fmt.Fprintf(f, "%f,%f,%s,%s\n", r.Cpu, r.Mem, r.Gpu, time.UnixMicro(int64(r.Time)).Format("2006-01-02 15:04:05.000"))
 		if err != nil {
 			return err
 		}
 	}
-	err = f.Close()
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
@@ -185,12 +189,7 @@ func (rs *Resources) DetectPort(port int) (int, error) {
 		}
 	}
 	if pid == 0 {
-		return 0, errors.New(fmt.Sprintf("No process listening port: ", port))
+		return 0, fmt.Errorf("no process listening port: %d", port)
 	}
 	return pid, nil
-}
-
-// bToMb bit转Mb
-func bToMb(b uint64) uint64 {
-	return b / 1024 / 1024
 }

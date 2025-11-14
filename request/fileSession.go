@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 	"xtest/analy"
+	"xtest/conf"
 	"xtest/frame"
 	"xtest/protocol"
 	"xtest/util"
-	_var "xtest/var"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" // nolint
 	xsfcli "github.com/xfyun/xsf/client"
 )
 
@@ -19,7 +19,7 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 	// 下行结果缓存
 
 	// go routine 区分不同frame slice数据流
-	var thrRslt []protocol.LoaderOutput = make([]protocol.LoaderOutput, 0, 1)
+	var thrRslt = make([]protocol.LoaderOutput, 0, 1)
 	var thrLock sync.Mutex
 	reqSid := util.NewSid(r.C.TestSub)
 	hdl, status, info := r.FilesessAIIn(cli, index, &thrRslt, &thrLock, reqSid)
@@ -38,7 +38,7 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 	_ = r.FilesessAIExcp(cli, hdl, reqSid)
 	// 结果落盘
 	tmpMerge := make(map[string] /*streamId*/ *protocol.Payload)
-	for k, _ := range thrRslt {
+	for k := range thrRslt {
 		for _, d := range thrRslt[k].Pl {
 			meta, exist := tmpMerge[d.Meta.Name]
 			if exist {
@@ -50,7 +50,7 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 	}
 
 	for _, v := range tmpMerge {
-		var outType string = "invalidType"
+		var outType = "invalidType"
 		switch v.Meta.DataType {
 		case protocol.MetaDesc_TEXT:
 			outType = "text"
@@ -63,11 +63,11 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
+		case r.C.AsyncDrop <- conf.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
 			key := reqSid + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
-			if outType == "image" {
+			if outType == "image" { // nolint
 				key += ".jpg"
 			} else if outType == "text" {
 				key += ".txt"
@@ -79,9 +79,9 @@ func (r *Request) FileSessionCall(cli *xsfcli.Client, index int64) (info analy.E
 }
 
 func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 	// request构包；构造首包SeqNo=1,同加载器建立会话上下文信息; 故首帧不携带具体数据
 	req := xsfcli.NewReq()
 	req.SetParam("SeqNo", "1")
@@ -105,7 +105,7 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 		dataIn.Params[k] = v
 	}
 	// 期望输出expect
-	for k, _ := range r.C.DownExpect {
+	for k := range r.C.DownExpect {
 		dataIn.Expect = append(dataIn.Expect, &r.C.DownExpect[k])
 	}
 
@@ -145,7 +145,7 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 		return hdl, status, einfo
 	default:
 		// unblock; check status
-		for k, _ := range *thrRslt {
+		for k := range *thrRslt {
 			if (*thrRslt)[k].Status == protocol.LoaderOutput_END {
 				status = (*thrRslt)[k].Status
 			}
@@ -155,9 +155,9 @@ func (r *Request) FilesessAIIn(cli *xsfcli.Client, indexs int64, thrRslt *[]prot
 }
 
 func (r *Request) FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session, reqSid string, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 	defer swg.Done()
 
 	seq := 1
@@ -250,16 +250,16 @@ func (r *Request) FilemultiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, ses
 			}
 
 			// wait ms.动态调整校准上行数据实时率, 考虑其他接口耗时.
-			r.FilertCalibration(seq, r.C.UpStreams[i].UpInterval, sTime)
+			r.FileRtCalibration(seq, r.C.UpStreams[i].UpInterval, sTime)
 		}
 	}
 
 }
 
-// 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
-func (r *Request) FilertCalibration(curReq int, interval int, sTime time.Time) {
-	cTime := int(time.Now().Sub(sTime).Nanoseconds() / (1000 * 1000)) // ssb至今绝对时长.ms
-	expect := interval * (curReq + 1)                                 // 期望发包时间
+// FileRtCalibration 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
+func (r *Request) FileRtCalibration(curReq int, interval int, sTime time.Time) {
+	cTime := int(time.Since(sTime).Milliseconds()) // ssb至今绝对时长.ms
+	expect := interval * (curReq + 1)              // 期望发包时间
 	if expect > cTime {
 		time.Sleep(time.Millisecond * time.Duration(expect-cTime))
 	}
@@ -267,9 +267,9 @@ func (r *Request) FilertCalibration(curReq int, interval int, sTime time.Time) {
 
 // downStream 下行调用单线程;
 func (r *Request) FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 	// loop read downstream result
 	seqNo := 1
 	for {
@@ -326,14 +326,12 @@ func (r *Request) FilesessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt
 			return // last result
 		}
 	}
-
-	return
 }
 
 func (r *Request) FilesessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 	req := xsfcli.NewReq()
 	req.SetParam("baseId", "0")
 	req.SetParam("waitTime", strconv.Itoa(r.C.TimeOut))

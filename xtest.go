@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 	"xtest/analy"
+	"xtest/conf"
 	"xtest/request"
 	"xtest/resources"
 	"xtest/util"
-	_var "xtest/var"
 
 	"github.com/pterm/pterm"
 	xsfcli "github.com/xfyun/xsf/client"
@@ -19,8 +20,8 @@ type Xtest struct {
 	cli *xsfcli.Client
 }
 
-func NewXtest(cli *xsfcli.Client, conf _var.Conf) Xtest {
-	return Xtest{r: request.Request{C: conf}, cli: cli}
+func NewXtest(cli *xsfcli.Client, c conf.Conf) Xtest {
+	return Xtest{r: request.Request{C: c}, cli: cli}
 }
 
 func (x *Xtest) Run() {
@@ -46,11 +47,15 @@ func (x *Xtest) Run() {
 
 	var wg sync.WaitGroup
 
-	// jbzhou5
+	//
 	r := resources.NewResources()      // 开启资源监听实例
 	stp := util.NewScheduledTaskPool() // 开启一个定时任务池
 	if x.r.C.PrometheusSwitch {
-		go r.Serve(x.r.C.PrometheusPort) // jbzhou5 启动一个协程写入Prometheus
+		go func() {
+			if err := r.Serve(x.r.C.PrometheusPort); err != nil {
+				log.Printf("failed to serve prometheus metrics: %v", err)
+			}
+		}()
 	}
 
 	if x.r.C.Plot {
@@ -99,15 +104,20 @@ func (x *Xtest) Run() {
 	xsfcli.DestroyClient(x.cli)
 	stp.Stop() // 关闭定时任务
 	r.Stop()   // 关闭资源收集
-	r.Dump()   // 持久化资源日志
+	// 持久化资源日志
+	if err := r.Dump(); err != nil {
+		x.cli.Log.Errorw("resource dump failed", "err", err)
+	}
 	if x.r.C.Plot {
-		r.Draw(x.r.C.PlotFile)
+		if err := r.Draw(x.r.C.PlotFile); err != nil {
+			x.cli.Log.Errorw("draw plot file failed", "err", err)
+		}
 	}
 	pterm.DefaultBasicText.Println(pterm.LightGreen("\ncli finish "))
 }
 
 func (x *Xtest) linearCtl() {
 	if x.r.C.LinearNs > 0 {
-		time.Sleep(time.Duration(time.Nanosecond) * time.Duration(x.r.C.LinearNs))
+		time.Sleep(time.Nanosecond * time.Duration(x.r.C.LinearNs))
 	}
 }

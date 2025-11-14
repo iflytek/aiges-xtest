@@ -2,10 +2,11 @@ package protocol
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"strconv"
 	"strings"
 	"xtest/frame"
+
+	"github.com/golang/protobuf/proto" // nolint
 )
 
 const (
@@ -113,7 +114,7 @@ func InputAdapter(version string, input []byte, ei *LoaderInput) (code int, err 
 
 			// 数据实体适配
 			datalist := engInput.GetDataList()
-			for k, _ := range datalist {
+			for k := range datalist {
 				var mt MetaDesc
 				mt.Name = datalist[k].DataId
 				mt.DataType = MetaDesc_DataType(datalist[k].DataType)
@@ -151,35 +152,35 @@ func InputAdapter(version string, input []byte, ei *LoaderInput) (code int, err 
 			}
 
 			var paramEncoding string
-			if taue,exist:=ei.Params[audioEncoding];exist{
-				paramEncoding=taue
+			if taue, exist := ei.Params[audioEncoding]; exist {
+				paramEncoding = taue
 			}
 			var paramRate string
-			if trate,exist:=ei.Params[sampleRateV1];exist{
+			if trate, exist := ei.Params[sampleRateV1]; exist {
 				switch trate {
-				case "16000","16k":
-					paramRate="16000"
-				case "8k","8000":
-					paramRate="8000"
+				case "16000", "16k":
+					paramRate = "16000"
+				case "8k", "8000":
+					paramRate = "8000"
 				default:
 					return frame.AigesErrorPbAdapterIatParamInvalid,
-					errors.New(frame.ErrorPbAdapterIatParamInvalid.Error()+":"+sampleRateV1)
+						errors.New(frame.ErrorPbAdapterIatParamInvalid.Error() + ":" + sampleRateV1)
 				}
 			}
-			if trate,exist:=ei.Params["sample_rate"];exist{
+			if trate, exist := ei.Params["sample_rate"]; exist {
 				switch trate {
-				case "16000","16k":
-					paramRate="16000"
-				case "8k","8000":
-					paramRate="8000"
+				case "16000", "16k":
+					paramRate = "16000"
+				case "8k", "8000":
+					paramRate = "8000"
 				default:
 					return frame.AigesErrorPbAdapterIatParamInvalid,
-						errors.New(frame.ErrorPbAdapterIatParamInvalid.Error()+":"+sampleRateV1)
+						errors.New(frame.ErrorPbAdapterIatParamInvalid.Error() + ":" + sampleRateV1)
 				}
 			}
 			// 数据实体适配
 			datalist := engInput.GetDataList()
-			for k, _ := range datalist {
+			for k := range datalist {
 				var mt MetaDesc
 				mt.Name = datalist[k].DataId
 				mt.DataType = MetaDesc_DataType(datalist[k].DataType)
@@ -187,18 +188,18 @@ func InputAdapter(version string, input []byte, ei *LoaderInput) (code int, err 
 				for dk, dv := range datalist[k].Desc {
 					mt.Attribute[dk] = string(dv)
 				}
-				if strings.TrimSpace(datalist[k].Encoding)==""{
-					mt.Attribute[Encoding]=paramEncoding
-				}else{
+				if strings.TrimSpace(datalist[k].Encoding) == "" {
+					mt.Attribute[Encoding] = paramEncoding
+				} else {
 					mt.Attribute[Encoding] = datalist[k].Encoding
 				}
 				mt.Attribute[Sequence] = strconv.Itoa(int(datalist[k].FrameId))
 				ei.SyncId = int32(datalist[k].FrameId) // v1场景仅需适配单数据流场景;
 				mt.Attribute[Status] = strconv.Itoa(int(datalist[k].Status))
 				mt.Attribute[FrameSize] = ei.Params[frameSizeV1]
-				if paramRate!=""{
+				if paramRate != "" {
 					mt.Attribute[SampleRate] = paramRate
-				}else{
+				} else {
 					fmts := strings.Split(datalist[k].Format, ";") // 拆解音频描述:采样率
 					if len(fmts) == 2 {
 						pairs := strings.Split(fmts[1], "=")
@@ -225,8 +226,8 @@ func InputAdapter(version string, input []byte, ei *LoaderInput) (code int, err 
 		if ei.Headers == nil {
 			ei.Headers = make(map[string]string)
 		}
-		if ei.Params==nil{
-			ei.Params=make(map[string]string)
+		if ei.Params == nil {
+			ei.Params = make(map[string]string)
 		}
 		ei.Headers[ReqSrc] = SrcV2
 	default:
@@ -243,7 +244,7 @@ func OutputAdapter(version string, eo *LoaderOutput) (output []byte, code int, e
 		engOutput.Status = EngOutputData_DataStatus(eo.Status)
 		engOutput.Err = eo.Err
 		engOutput.Ret = eo.Code
-		for k, _ := range eo.Pl {
+		for k := range eo.Pl {
 			md := MetaData{
 				Data:     eo.Pl[k].Data,
 				DataId:   eo.Pl[k].Meta.Name,

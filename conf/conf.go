@@ -1,24 +1,24 @@
-package _var
+package conf
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/xfyun/xsf/utils"
-	"go.uber.org/atomic"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"xtest/protocol"
 	"xtest/util"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/xfyun/xsf/utils"
+	"go.uber.org/atomic"
 )
 
 const (
 	CliName = "xtest"
-	CliVer  = "2.0.1"
 )
 
 type InputMeta struct {
@@ -57,12 +57,12 @@ type Conf struct {
 	ReqMode          int           // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
 	LinearNs         int           // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
 	TestSub          string        // 测试业务sub, 缺省test
-	InputCmd         bool          // jbzhou5 非会话模式切换为命令行输入
-	PrometheusSwitch bool          // jbzhou5 Prometheus写入开关
-	PrometheusPort   int           // jbzhou5 Prometheus指标服务端口
-	Plot             bool          // jbzhou5 绘制图形开关
-	PlotFile         string        // jbzhou5 绘制图像保存路径
-	FileSorted       int           // jbzhou5 文件排序方式
+	InputCmd         bool          //  非会话模式切换为命令行输入
+	PrometheusSwitch bool          //  Prometheus写入开关
+	PrometheusPort   int           //  Prometheus指标服务端口
+	Plot             bool          //  绘制图形开关
+	PlotFile         string        //  绘制图像保存路径
+	FileSorted       int           //  文件排序方式
 	FileNameSeq      string        // 文件名分割方式
 	PerfConfigOn     bool          //true: 开启性能检测 false: 不开启性能检测
 	PerfLevel        int           //非会话模式默认0
@@ -90,11 +90,11 @@ type Conf struct {
 	ErrAnaDst string
 	AsyncDrop chan OutputMeta // 下行数据异步落盘同步通道
 
-	// jbzhou5 性能资源日志保存目录
+	//  性能资源日志保存目录
 	// ResourcesDst = "./"
-	// jbzhou5 Prometheus并发协程计数器
+	//  Prometheus并发协程计数器
 	ConcurrencyCnt prometheus.Gauge
-	// jbzhou5 Prometheus监听参数
+	//  Prometheus监听参数
 	CpuPer prometheus.Gauge
 	MemPer prometheus.Gauge
 	// ybyang7 GPU 获取开关
@@ -114,11 +114,11 @@ func NewConf() Conf {
 		ReqMode:          0,                      // 0: 非会话模式, 1: 常规会话模式 2.文本按行会话模式 3.文件会话模式
 		LinearNs:         0,                      // 并发模型线性增长时间,用于计算并发增长斜率(单位：ns). default:0,瞬时并发压测.
 		TestSub:          "ase",                  // 测试业务sub, 缺省test
-		InputCmd:         false,                  // jbzhou5 非会话模式切换为命令行输入
-		PrometheusSwitch: false,                  // jbzhou5 Prometheus写入开关
-		Plot:             true,                   // jbzhou5 绘制图形开关
-		PlotFile:         "./log/line.png",       // jbzhou5 绘制图像保存路径
-		FileSorted:       0,                      // jbzhou5 文件排序方式
+		InputCmd:         false,                  //  非会话模式切换为命令行输入
+		PrometheusSwitch: false,                  //  Prometheus写入开关
+		Plot:             true,                   //  绘制图形开关
+		PlotFile:         "./log/line.png",       //  绘制图像保存路径
+		FileSorted:       0,                      //  文件排序方式
 		FileNameSeq:      "/",                    // 文件名分割方式
 		PerfConfigOn:     false,                  //true: 开启性能检测 false: 不开启性能检测
 		PerfLevel:        0,                      //非会话模式默认0
@@ -146,14 +146,14 @@ func NewConf() Conf {
 		ErrAnaDst: "./log/errDist",
 		AsyncDrop: make(chan OutputMeta), // 下行数据异步落盘同步通道
 
-		// jbzhou5 性能资源日志保存目录
+		//  性能资源日志保存目录
 		// ResourcesDst = "./"
-		// jbzhou5 Prometheus并发协程计数器
+		//  Prometheus并发协程计数器
 		ConcurrencyCnt: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "Xtest_Concurrency_Go_Routine",
 			Help: "The total number of processed events",
 		}),
-		// jbzhou5 Prometheus监听参数
+		//  Prometheus监听参数
 		CpuPer: promauto.NewGauge(prometheus.GaugeOpts{ // CPU 利用率
 			Name: "Xtest_CPU_Percent",
 			Help: "Xtest cpu percent",
@@ -187,10 +187,10 @@ func (c *Conf) ConfInit(conf *utils.Configure) error {
 		return err
 	}
 
-	//jbzhou5 输入流
+	// 输入流
 	if c.InputCmd { // 开启命令行输入
 		c.Payload = []string{} // 清空payload输入
-		if err := c.secParseCmd(conf); err != nil {
+		if err := c.secParseCmd(); err != nil {
 			return err
 		}
 	} else {
@@ -211,9 +211,8 @@ func (c *Conf) ConfInit(conf *utils.Configure) error {
 }
 
 func (c *Conf) secParseXtest(conf *utils.Configure) error {
-	secTmp := "xtest"
-	if taddrs, err := conf.GetString(secTmp, "taddrs"); err == nil {
-		c.Taddrs = taddrs
+	if targetAddr, err := conf.GetString("xtest", "taddrs"); err == nil {
+		c.Taddrs = targetAddr
 	}
 	return nil
 }
@@ -301,7 +300,7 @@ func (c *Conf) secParsePl(conf *utils.Configure) error {
 			}
 			meta.DataList = append(meta.DataList, data...)
 		} else if fi.Size() != 0 {
-			data, err := ioutil.ReadFile(meta.DataSrc)
+			data, err := os.ReadFile(meta.DataSrc)
 			if err != nil {
 				fmt.Printf("read file %s fail, %s", meta.DataSrc, err.Error())
 				return err
@@ -376,37 +375,37 @@ func (c *Conf) secParseSvc(conf *utils.Configure) error {
 		c.LinearNs = (linearms * 1000 * 1000) / c.MultiThr
 	}
 
-	// jbzhou5 当模式为非会话且配置了cmd输入，才开启手动输入
+	//  当模式为非会话且配置了cmd输入，才开启手动输入
 	if inputCmd, err := conf.GetBool(secTmp, "inputCmd"); err == nil && c.ReqMode == 0 {
 		c.InputCmd = inputCmd
 	}
 
-	// jbzhou5 Prometheus写入开关
+	//  Prometheus写入开关
 	if prometheusSwitch, err := conf.GetBool(secTmp, "prometheus_switch"); err == nil {
 		c.PrometheusSwitch = prometheusSwitch
 	}
 
-	// jbzhou5 Prometheus指标端口
+	//  Prometheus指标端口
 	if prometheusPort, err := conf.GetInt(secTmp, "prometheus_port"); err == nil {
 		c.PrometheusPort = prometheusPort
 	}
 
-	// jbzhou5 资源监控绘图开关
+	//  资源监控绘图开关
 	if plot, err := conf.GetBool(secTmp, "plot"); err == nil {
 		c.Plot = plot
 	}
 
-	// jbzhou5 绘图保存路径
+	//  绘图保存路径
 	if plotFile, err := conf.GetString(secTmp, "plot_file"); err == nil {
 		c.PlotFile = plotFile
 	}
 
-	// jbzhou5 设置读入文件顺序
+	//  设置读入文件顺序
 	if fileSorted, err := conf.GetInt(secTmp, "file_sorted"); err == nil {
 		c.FileSorted = fileSorted
 	}
 
-	// jbzhou5 文件名分割方式
+	//  文件名分割方式
 	if filenameSeq, err := conf.GetString(secTmp, "file_name_seq"); err == nil && filenameSeq != "" {
 		c.FileNameSeq = filenameSeq
 	}
@@ -427,23 +426,23 @@ func (c *Conf) secParseHeader(conf *utils.Configure) error {
 		if ok {
 			for key, value := range kv {
 				var valStr string
-				switch value.(type) {
+				switch value := value.(type) {
 				case string:
-					valStr = value.(string)
+					valStr = value
 				case int:
-					valStr = strconv.Itoa(value.(int))
+					valStr = strconv.Itoa(value)
 				case int64:
-					valStr = strconv.FormatInt(value.(int64), 10)
+					valStr = strconv.FormatInt(value, 10)
 				case uint:
-					valStr = strconv.FormatUint(uint64(value.(uint)), 10)
+					valStr = strconv.FormatUint(uint64(value), 10)
 				case uint64:
-					valStr = strconv.FormatUint(value.(uint64), 10)
+					valStr = strconv.FormatUint(value, 10)
 				case bool:
-					valStr = strconv.FormatBool(value.(bool))
+					valStr = strconv.FormatBool(value)
 				case float64:
-					valStr = strconv.FormatFloat(value.(float64), 'f', -1, 64)
+					valStr = strconv.FormatFloat(value, 'f', -1, 64)
 				case float32:
-					valStr = strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32)
+					valStr = strconv.FormatFloat(float64(value), 'f', -1, 32)
 				default:
 					return errors.New("invalid header configure, type/key " + reflect.TypeOf(value).String() + key)
 				}
@@ -464,23 +463,23 @@ func (c *Conf) secParseParams(conf *utils.Configure) error {
 		if ok {
 			for key, value := range kv {
 				var valStr string
-				switch value.(type) {
+				switch value := value.(type) {
 				case string:
-					valStr = value.(string)
+					valStr = value
 				case int:
-					valStr = strconv.Itoa(value.(int))
+					valStr = strconv.Itoa(value)
 				case int64:
-					valStr = strconv.FormatInt(value.(int64), 10)
+					valStr = strconv.FormatInt(value, 10)
 				case uint:
-					valStr = strconv.FormatUint(uint64(value.(uint)), 10)
+					valStr = strconv.FormatUint(uint64(value), 10)
 				case uint64:
-					valStr = strconv.FormatUint(value.(uint64), 10)
+					valStr = strconv.FormatUint(value, 10)
 				case bool:
-					valStr = strconv.FormatBool(value.(bool))
+					valStr = strconv.FormatBool(value)
 				case float64:
-					valStr = strconv.FormatFloat(value.(float64), 'f', -1, 64)
+					valStr = strconv.FormatFloat(value, 'f', -1, 64)
 				case float32:
-					valStr = strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32)
+					valStr = strconv.FormatFloat(float64(value), 'f', -1, 32)
 				default:
 					return errors.New("invalid parameter configure, type/key " + reflect.TypeOf(value).String() + key)
 				}
@@ -552,8 +551,8 @@ func (c *Conf) secParseDStream(conf *utils.Configure) error {
 	return nil
 }
 
-// jbzhou5 解析命令行输入的数据
-func (c *Conf) secParseCmd(conf *utils.Configure) error {
+// 解析命令行输入的数据
+func (c *Conf) secParseCmd() error {
 	meta := InputMeta{}
 	meta.Name = "CMD"
 	meta.DataSrc = "CMD"
@@ -562,16 +561,16 @@ func (c *Conf) secParseCmd(conf *utils.Configure) error {
 	meta.UpInterval = 40
 
 	meta.DataDesc = make(map[string]string)
-	descstr := "encoding=utf8;compress=gzip"
-	descarr := strings.Split(descstr, ";")
-	for _, desc := range descarr {
+	descStr := "encoding=utf8;compress=gzip"
+	descArr := strings.Split(descStr, ";")
+	for _, desc := range descArr {
 		tmp := strings.Split(desc, "=")
 		if len(tmp) == 2 {
 			meta.DataDesc[tmp[0]] = tmp[1]
 		}
 	}
 	var data string
-	n, err := Input(data)
+	n, err := input(data)
 	if n == 0 || err != nil {
 		return errors.New("cmd input error")
 	}
@@ -584,4 +583,14 @@ func (c *Conf) secParseCmd(conf *utils.Configure) error {
 	// 上行数据流
 	c.UpStreams = append(c.UpStreams, meta)
 	return nil
+}
+
+func input(data string) (int, error) {
+	in := bufio.NewReader(os.Stdin)
+	fmt.Print("Please input data: ")
+	n, err := fmt.Fscanln(in, &data)
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }

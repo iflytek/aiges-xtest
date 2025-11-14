@@ -24,7 +24,7 @@ var (
 //	LocalIP = tmp[0]
 //
 //	ip := net.ParseIP(LocalIP)
-//	var ipSec3, ipSec4 int
+//	conf ipSec3, ipSec4 int
 //	if ip != nil {
 //		ipSec3 = (int)(ip[14])
 //		ipSec4 = (int)(ip[15])

@@ -49,7 +49,7 @@ func ReadDir(src string, sep string, flag int) ([][]byte, error) {
 }
 
 func CompFunc(flag int, i, j string) bool {
-	if flag == 0 {
+	if flag == 0 { // nolint
 		return i == j // 打乱顺序
 	} else if flag == 1 {
 		if len(i) == len(j) {

@@ -1,7 +1,7 @@
 package request
 
-import _var "xtest/var"
+import "xtest/conf"
 
 type Request struct {
-	C _var.Conf
+	C conf.Conf
 }

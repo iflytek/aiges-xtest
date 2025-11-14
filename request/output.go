@@ -2,11 +2,12 @@ package request
 
 import (
 	"fmt"
-	"github.com/xfyun/xsf/utils"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
+
+	"github.com/xfyun/xsf/utils"
 )
 
 // 下行数据异步落盘或打印
@@ -18,7 +19,7 @@ func (r *Request) DownStreamWrite(wg *sync.WaitGroup, log *utils.Logger) {
 		}
 
 		key := output.Sid + "-" + output.Type + "-" + output.Name + "-" + strconv.FormatInt(output.Seq, 10)
-		if output.Type == "image" {
+		if output.Type == "image" { // nolint
 			key += ".jpg"
 		} else if output.Type == "text" {
 			key += ".txt"

@@ -2,28 +2,29 @@ package request
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
-	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"sync"
 	"time"
 	"xtest/analy"
+	"xtest/conf"
 	"xtest/frame"
 	"xtest/protocol"
 	"xtest/util"
 	frameUtil "xtest/util/frame"
-	_var "xtest/var"
+
+	"github.com/golang/protobuf/proto" // nolint
+	xsfcli "github.com/xfyun/xsf/client"
 )
 
 func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
 	// 下行结果缓存
-	var indexs []int = make([]int, 0, len(r.C.UpStreams))
+	var indexs = make([]int, 0, len(r.C.UpStreams))
 	for _, v := range r.C.UpStreams {
 		streamIndex := index % int64(len(v.DataList))
 		indexs = append(indexs, int(streamIndex))
 	}
 	// go routine 区分不同frame slice数据流
-	var thrRslt []protocol.LoaderOutput = make([]protocol.LoaderOutput, 0, 1)
+	var thrRslt = make([]protocol.LoaderOutput, 0, 1)
 	var thrLock sync.Mutex
 	reqSid := util.NewSid(r.C.TestSub)
 	hdl, status, info := r.sessAIIn(cli, indexs, &thrRslt, &thrLock, reqSid)
@@ -68,11 +69,11 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		}
 
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
+		case r.C.AsyncDrop <- conf.OutputMeta{Name: v.Meta.Name, Sid: reqSid, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-format-encoding, value: data
 			key := reqSid + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
-			if outType == "image" {
+			if outType == "image" { // nolint
 				key += ".jpg"
 			} else if outType == "text" {
 				key += ".txt"
@@ -84,9 +85,9 @@ func (r *Request) SessionCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 }
 
 func (r *Request) sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol.LoaderOutput, thrLock *sync.Mutex, reqSid string) (hdl string, status protocol.LoaderOutput_RespStatus, info analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 
 	// request构包；构造首包SeqNo=1,同加载器建立会话上下文信息; 故首帧不携带具体数据
 	println(indexs)
@@ -112,7 +113,7 @@ func (r *Request) sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol
 		dataIn.Params[k] = v
 	}
 	// 期望输出expect
-	for k, _ := range r.C.DownExpect {
+	for k := range r.C.DownExpect {
 		dataIn.Expect = append(dataIn.Expect, &r.C.DownExpect[k])
 	}
 
@@ -163,7 +164,7 @@ func (r *Request) sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol
 		return hdl, status, einfo
 	default:
 		// unblock; check status
-		for k, _ := range *thrRslt {
+		for k := range *thrRslt {
 			if (*thrRslt)[k].Status == protocol.LoaderOutput_END {
 				status = (*thrRslt)[k].Status
 			}
@@ -173,9 +174,9 @@ func (r *Request) sessAIIn(cli *xsfcli.Client, indexs []int, thrRslt *[]protocol
 }
 
 func (r *Request) multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session string, interval int, indexs map[int]int, pm *[]protocol.LoaderOutput, sm *sync.Mutex, errchan chan analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 
 	defer swg.Done()
 
@@ -248,7 +249,7 @@ func (r *Request) multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session
 		input, err := proto.Marshal(&dataIn)
 		if err != nil {
 			cli.Log.Errorw("multiUpStream marshal create request fail", "err", err.Error(), "params", dataIn.Params)
-			r.unBlockChanWrite(errchan, analy.ErrInfo{-1, err})
+			r.unBlockChanWrite(errchan, analy.ErrInfo{ErrCode: -1, ErrStr: err})
 			return
 		}
 
@@ -311,8 +312,8 @@ func (r *Request) multiUpStream(cli *xsfcli.Client, swg *sync.WaitGroup, session
 
 // 实时性校准,用于校准发包大小及发包时间间隔之间的实时性.
 func (r *Request) rtCalibration(curReq int, interval int, sTime time.Time) {
-	cTime := int(time.Now().Sub(sTime).Nanoseconds() / (1000 * 1000)) // ssb至今绝对时长.ms
-	expect := interval * (curReq + 1)                                 // 期望发包时间
+	cTime := int(time.Since(sTime).Nanoseconds() / (1000 * 1000)) // ssb至今绝对时长.ms
+	expect := interval * (curReq + 1)                             // 期望发包时间
 	if expect > cTime {
 		time.Sleep(time.Millisecond * time.Duration(expect-cTime))
 	}
@@ -320,9 +321,9 @@ func (r *Request) rtCalibration(curReq int, interval int, sTime time.Time) {
 
 // downStream 下行调用单线程;
 func (r *Request) sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]protocol.LoaderOutput) (info analy.ErrInfo) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 
 	// loop read downstream result
 	for {
@@ -376,14 +377,12 @@ func (r *Request) sessAIOut(cli *xsfcli.Client, hdl string, sid string, rslt *[]
 			return analy.ErrInfo{ErrStr: err} // last result
 		}
 	}
-
-	return
 }
 
 func (r *Request) sessAIExcp(cli *xsfcli.Client, hdl string, sid string) (err error) {
-	// jbzhou5 并行网络协程监听
+	//  并行网络协程监听
 	r.C.ConcurrencyCnt.Add(1)
-	defer r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	defer r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 
 	req := xsfcli.NewReq()
 	req.SetParam("baseId", "0")

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/xfyun/xsf/utils"
 	"io"
 	"math"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/xfyun/xsf/utils"
 )
 
 type direction int
@@ -209,8 +210,7 @@ func (pf *PerfModule) pretreatment(id string) {
 			}
 		}
 		pf.idx += 1
-		_, _ = pf.reqRecordFile.WriteString(fmt.Sprintf("id:%s,cost:%f,begin:%s,end:%s\n",
-			id, float32(end.Sub(begin).Microseconds())/1000, begin, end))
+		_, _ = fmt.Fprintf(pf.reqRecordFile, "id:%s,cost:%f,begin:%s,end:%s\n", id, float32(end.Sub(begin).Microseconds())/1000, begin, end)
 		if pf.idx%500 == 0 {
 			_ = pf.reqRecordFile.Sync()
 		}
@@ -228,8 +228,6 @@ func (pf *PerfModule) pretreatment(id string) {
 					knowUp = true
 				} else if record.dataStat == DataEnd {
 					lastReq = record.Tm
-				} else {
-
 				}
 			} else {
 				if record.dataStat == DataBegin && !knowDown {
@@ -238,8 +236,6 @@ func (pf *PerfModule) pretreatment(id string) {
 				} else if record.dataStat == DataEnd {
 					lastRlt = record.Tm
 					end = record.Tm
-				} else {
-
 				}
 			}
 		}
@@ -251,12 +247,19 @@ func (pf *PerfModule) pretreatment(id string) {
 		if !knowDown {
 			firstRlt = end
 		}
-		_, _ = pf.reqRecordFile.WriteString(fmt.Sprintf("id:%s,cost:%f,firstCost:%f,lastCost:%f,begin:%s,end:%s,"+
-			"firstReq:%s,firstRlt:%s,lastReq:%s,lastRlt:%s\n",
-			id, float32(end.Sub(begin).Microseconds())/1000,
+		_, _ = fmt.Fprintf(pf.reqRecordFile, "id:%s,cost:%f,firstCost:%f,lastCost:%f,begin:%s,end:%s,firstReq:%s,firstRlt:%s,lastReq:%s,lastRlt:%s\n",
+			id,
+			float32(end.Sub(begin).Microseconds())/1000,
 			float32(firstRlt.Sub(firstReq).Microseconds())/1000,
 			float32(lastRlt.Sub(lastReq).Microseconds())/1000,
-			begin, end, firstReq, firstRlt, lastReq, lastRlt))
+			begin,
+			end,
+			firstReq,
+			firstRlt,
+			lastReq,
+			lastRlt,
+		)
+
 		if pf.idx%500 == 0 {
 			_ = pf.reqRecordFile.Sync()
 		}
@@ -270,7 +273,7 @@ func (pf *PerfModule) loadRecord() error {
 		pf.Log.Errorf("perf failed to load record file. %s", err.Error())
 		return err
 	}
-	defer loadFile.Close()
+	defer loadFile.Close() // nolint
 	br := bufio.NewReader(loadFile)
 	for {
 		record, _, c := br.ReadLine()
@@ -352,11 +355,10 @@ func (pf *PerfModule) calcDelay() {
 				}
 				return tmp
 			}(pf.correctReqCost))
-	} else {
 	}
 
 	var errCount int
-	for k, _ := range pf.errReqRecord {
+	for k := range pf.errReqRecord {
 		errCount += len(pf.errReqRecord[k])
 	}
 	pf.Log.Debugw("perf calc", "correctNum", len(pf.correctReqCost), "errCount", errCount)
@@ -370,7 +372,7 @@ func (pf *PerfModule) dump() {
 		pf.Log.Errorf("perf failed to dump performance data.%s ", err)
 		return
 	}
-	defer file.Close()
+	defer file.Close() // nolint
 	val, _ := json.Marshal(pf.perf)
 	_, _ = file.WriteString("perf result:\n ")
 	_, _ = file.Write(val)

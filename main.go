@@ -1,33 +1,44 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+	"log"
+	"xtest/conf"
+
 	xsfcli "github.com/xfyun/xsf/client"
 	"github.com/xfyun/xsf/utils"
-	_var "xtest/var"
 )
 
 func main() {
-	f := _var.NewFlag()
-	f.Parse()
-	// xrpc框架初始化;
-	cli, e := xsfcli.InitClient(_var.CliName, utils.CfgMode(0), utils.WithCfgName(*f.CmdCfg),
-		utils.WithCfgURL(""), utils.WithCfgPrj(""), utils.WithCfgGroup(""),
-		utils.WithCfgService(""), utils.WithCfgVersion(""))
-	if e != nil {
-		fmt.Println("cli xsf init fail with ", e.Error())
+	var (
+		f string
+		v bool
+	)
+
+	flag.StringVar(&f, "f", "xtest.toml", "client cfg name")
+	flag.BoolVar(&v, "v", false, "show xtest version")
+	flag.Parse()
+
+	if v {
+		log.Println("3.0.0")
 		return
 	}
 
-	// cli配置初始化;
-	conf := _var.NewConf()
-	e = conf.ConfInit(cli.Cfg())
-	if e != nil {
-		fmt.Println("cli conf init fail with ", e.Error())
-		return
+	cli, err := xsfcli.InitClient(
+		conf.CliName,
+		utils.Native,
+		utils.WithCfgName(f),
+	)
+	if err != nil {
+		log.Fatalf("cli xsf init failed: %v", err)
 	}
-	//fmt.Printf("%+v\n", conf)
-	x := NewXtest(cli, conf)
+
+	// cli配置初始化;
+	c := conf.NewConf()
+	if err = c.ConfInit(cli.Cfg()); err != nil {
+		log.Fatalf("cli conf init failed:  %v", err)
+	}
+
+	x := NewXtest(cli, c)
 	x.Run()
-	return
 }

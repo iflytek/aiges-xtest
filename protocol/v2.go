@@ -15,7 +15,7 @@ const (
 	SessionId = "sid"
 	Nsa       = "nsa"
 
-	DataCleanTTL="data_cleaner_ttl"
+	DataCleanTTL = "data_cleaner_ttl"
 )
 
 // payload attribute
@@ -98,7 +98,6 @@ func GetAllAttr(desc *MetaDesc) (attr interface{}) {
 	default:
 		return nil
 	}
-	return
 }
 
 func GetBaseAttr(desc *MetaDesc) (attr BaseAttr) {

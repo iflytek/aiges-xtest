@@ -2,14 +2,15 @@ package request
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
-	xsfcli "github.com/xfyun/xsf/client"
 	"strconv"
 	"time"
 	"xtest/analy"
+	"xtest/conf"
 	"xtest/protocol"
 	"xtest/util"
-	_var "xtest/var"
+
+	"github.com/golang/protobuf/proto" // nolint
+	xsfcli "github.com/xfyun/xsf/client"
 )
 
 func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrInfo) {
@@ -37,7 +38,7 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 		dataIn.Params[k] = v
 	}
 	// 期望输出expect
-	for k, _ := range r.C.DownExpect {
+	for k := range r.C.DownExpect {
 		dataIn.Expect = append(dataIn.Expect, &r.C.DownExpect[k])
 	}
 	// 上行数据payload
@@ -69,9 +70,9 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 	caller := xsfcli.NewCaller(cli)
 
 	analy.Perf.Record(sessId, "", analy.DataTotal, analy.SessOnce, analy.UP, 0, "")
-	r.C.ConcurrencyCnt.Add(1) // jbzhou5 启动协程时+1
+	r.C.ConcurrencyCnt.Add(1) //  启动协程时+1
 	resp, code, err := caller.SessionCall(xsfcli.ONESHORT, r.C.SvcName, "AIIn", req, time.Duration(r.C.TimeOut+r.C.LossDeviation)*time.Millisecond)
-	r.C.ConcurrencyCnt.Dec() // jbzhou5 任务完成时-1
+	r.C.ConcurrencyCnt.Dec() //  任务完成时-1
 	if err != nil {
 		cli.Log.Errorw("OneShotCall request fail", "err", err.Error(), "code", code,
 			"header", dataIn.Headers, "params", dataIn.Params)
@@ -98,7 +99,7 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 	// get result
 	for _, v := range dataOut.Pl {
 		// 结果输出 & 异步写channel失败则同步写入;
-		var outType string = "invalidType"
+		var outType = "invalidType"
 		switch v.Meta.DataType {
 		case protocol.MetaDesc_TEXT:
 			outType = "text"
@@ -110,11 +111,11 @@ func (r *Request) OneShotCall(cli *xsfcli.Client, index int64) (info analy.ErrIn
 			outType = "video"
 		}
 		select {
-		case r.C.AsyncDrop <- _var.OutputMeta{Name: v.Meta.Name, Sid: sessId, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
+		case r.C.AsyncDrop <- conf.OutputMeta{Name: v.Meta.Name, Sid: sessId, Type: outType, Desc: v.Meta.Attribute, Seq: index, Data: v.Data}:
 		default:
 			// 异步channel满, 同步写;	key: sid-type-name, value: data
 			key := sessId + "-" + outType + "-" + v.Meta.Name + "-" + strconv.FormatInt(index, 10)
-			if outType == "image" {
+			if outType == "image" { // nolint
 				key += ".jpg"
 			} else if outType == "text" {
 				key += ".txt"

@@ -2,11 +2,11 @@ package util
 
 import (
 	"errors"
-	"github.com/wcharczuk/go-chart"
-	"github.com/wcharczuk/go-chart/drawing"
 	"math/rand"
 	"os"
-	"time"
+
+	"github.com/wcharczuk/go-chart"
+	"github.com/wcharczuk/go-chart/drawing"
 )
 
 const (
@@ -46,14 +46,14 @@ type LinesData struct {
 // createLineChart 创建线性图
 func (c *Charts) createLineChart(title string, xValues []float64, values []LineYValue) error {
 	if len(values) == 0 {
-		return errors.New("Y axis length is zero")
+		return errors.New("y axis length is zero")
 	}
 	// 1、计算X轴
 	// X轴内容xValues 及 X轴坐标ticks
-	var ticks []chart.Tick
-	for _, t := range xValues {
-		ticks = append(ticks, chart.Tick{Value: t, Label: timeFormat(t)})
-	}
+	//conf ticks []chart.Tick
+	//for _, t := range xValues {
+	//	ticks = append(ticks, chart.Tick{Value: t, Label: timeFormat(t)})
+	//}
 	// 2、生成Series
 	var series []chart.Series
 	for _, yValue := range values {
@@ -87,10 +87,13 @@ func (c *Charts) createLineChart(title string, xValues []float64, values []LineY
 		Series: series,
 	}
 	graph.Elements = []chart.Renderable{chart.LegendLeft(&graph)}
-	f, _ := os.Create(c.Dst)
-	defer f.Close()
-	err := graph.Render(chart.PNG, f)
-	return err
+	f, err := os.Create(c.Dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close() // nolint
+
+	return graph.Render(chart.PNG, f)
 }
 
 // Draw 传入绘制数据，绘制条形图
@@ -106,9 +109,4 @@ func GetHMS(v interface{}) string {
 	//h, m, s, ns := t.Hour(), t.Minute(), t.Second(), t.Nanosecond()
 	//return fmt.Sprintf("%d:%d:%d %d", h, m, s, ns)
 	return ""
-}
-
-// getNsec 获取纳秒数
-func getNsec(cur time.Time) float64 {
-	return float64(cur.Unix() * int64(time.Second))
 }

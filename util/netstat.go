@@ -10,7 +10,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -19,16 +18,14 @@ import (
 	"strings"
 )
 
-
 const (
-	PROC_TCP = "/proc/net/tcp"
-	PROC_UDP = "/proc/net/udp"
+	PROC_TCP  = "/proc/net/tcp"
+	PROC_UDP  = "/proc/net/udp"
 	PROC_TCP6 = "/proc/net/tcp6"
 	PROC_UDP6 = "/proc/net/udp6"
-
 )
 
-var STATE = map[string]string {
+var STATE = map[string]string{
 	"01": "ESTABLISHED",
 	"02": "SYN_SENT",
 	"03": "SYN_RECV",
@@ -42,17 +39,16 @@ var STATE = map[string]string {
 	"0B": "CLOSING",
 }
 
-
 type Process struct {
-	User         string
-	Name         string
-	Pid          string
-	Exe          string
-	State        string
-	Ip           string
-	Port         int64
-	ForeignIp    string
-	ForeignPort  int64
+	User        string
+	Name        string
+	Pid         string
+	Exe         string
+	State       string
+	Ip          string
+	Port        int64
+	ForeignIp   string
+	ForeignPort int64
 }
 
 type iNode struct {
@@ -63,23 +59,23 @@ type iNode struct {
 func getData(t string) []string {
 	// Get data from tcp or udp file.
 
-	var proc_t string
+	var procT string
 
-	if t == "tcp" {
-		proc_t = PROC_TCP
-	} else if t == "udp" {
-		proc_t = PROC_UDP
-	} else if t == "tcp6" {
-		proc_t = PROC_TCP6
-	} else if t == "udp6" {
-		proc_t = PROC_UDP6
-	} else {
+	switch t {
+	case "tcp":
+		procT = PROC_TCP
+	case "udp":
+		procT = PROC_UDP
+	case "tcp6":
+		procT = PROC_TCP6
+	case "udp6":
+		procT = PROC_UDP6
+	default:
 		fmt.Printf("%s is a invalid type, tcp and udp only!\n", t)
 		os.Exit(1)
 	}
 
-
-	data, err := ioutil.ReadFile(proc_t)
+	data, err := os.ReadFile(procT)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -87,10 +83,9 @@ func getData(t string) []string {
 	lines := strings.Split(string(data), "\n")
 
 	// Return lines without Header line and blank line on the end
-	return lines[1:len(lines) - 1]
+	return lines[1 : len(lines)-1]
 
 }
-
 
 func hexToDec(h string) int64 {
 	// convert hexadecimal to decimal.
@@ -103,7 +98,6 @@ func hexToDec(h string) int64 {
 	return d
 }
 
-
 func convertIp(ip string) string {
 	// Convert the ipv4 to decimal. Have to rearrange the ip because the
 	// default value is in little Endian order.
@@ -112,7 +106,7 @@ func convertIp(ip string) string {
 
 	// Check ip size if greater than 8 is a ipv6 type
 	if len(ip) > 8 {
-		i := []string{ ip[30:32],
+		i := []string{ip[30:32],
 			ip[28:30],
 			ip[26:28],
 			ip[24:26],
@@ -131,20 +125,19 @@ func convertIp(ip string) string {
 		out = fmt.Sprintf("%v%v:%v%v:%v%v:%v%v:%v%v:%v%v:%v%v:%v%v",
 			i[14], i[15], i[13], i[12],
 			i[10], i[11], i[8], i[9],
-			i[6],  i[7], i[4], i[5],
+			i[6], i[7], i[4], i[5],
 			i[2], i[3], i[0], i[1])
 
 	} else {
-		i := []int64{ hexToDec(ip[6:8]),
+		i := []int64{hexToDec(ip[6:8]),
 			hexToDec(ip[4:6]),
 			hexToDec(ip[2:4]),
-			hexToDec(ip[0:2]) }
+			hexToDec(ip[0:2])}
 
 		out = fmt.Sprintf("%v.%v.%v.%v", i[0], i[1], i[2], i[3])
 	}
 	return out
 }
-
 
 func findPid(inode string, inodes *[]iNode) string {
 	// Loop through all fd dirs of process on /proc to compare the inode and
@@ -162,20 +155,17 @@ func findPid(inode string, inodes *[]iNode) string {
 	return pid
 }
 
-
 func getProcessExe(pid string) string {
 	exe := fmt.Sprintf("/proc/%s/exe", pid)
 	path, _ := os.Readlink(exe)
 	return path
 }
 
-
 func getProcessName(exe string) string {
 	n := strings.Split(exe, "/")
-	name := n[len(n) -1]
-	return strings.Title(name)
+	name := n[len(n)-1]
+	return strings.Title(name) // nolint
 }
-
 
 func getUser(uid string) string {
 	u, err := user.LookupId(uid)
@@ -185,32 +175,31 @@ func getUser(uid string) string {
 	return u.Username
 }
 
-
 func removeEmpty(array []string) []string {
 	// remove empty data from line
-	var new_array [] string
-	for _, i := range(array) {
+	var newArray []string
+	for _, i := range array {
 		if i != "" {
-			new_array = append(new_array, i)
+			newArray = append(newArray, i)
 		}
 	}
-	return new_array
+	return newArray
 }
 
 func processNetstatLine(line string, fileDescriptors *[]iNode, output chan<- Process) {
-	line_array := removeEmpty(strings.Split(strings.TrimSpace(line), " "))
-	ip_port := strings.Split(line_array[1], ":")
-	ip := convertIp(ip_port[0])
-	port := hexToDec(ip_port[1])
+	lineArray := removeEmpty(strings.Split(strings.TrimSpace(line), " "))
+	ipPort := strings.Split(lineArray[1], ":")
+	ip := convertIp(ipPort[0])
+	port := hexToDec(ipPort[1])
 
 	// foreign ip and port
-	fip_port := strings.Split(line_array[2], ":")
-	fip := convertIp(fip_port[0])
-	fport := hexToDec(fip_port[1])
+	fipPort := strings.Split(lineArray[2], ":")
+	fip := convertIp(fipPort[0])
+	fport := hexToDec(fipPort[1])
 
-	state := STATE[line_array[3]]
-	uid := getUser(line_array[7])
-	pid := findPid(line_array[9], fileDescriptors)
+	state := STATE[lineArray[3]]
+	uid := getUser(lineArray[7])
+	pid := findPid(lineArray[9], fileDescriptors)
 	exe := getProcessExe(pid)
 	name := getProcessName(exe)
 	output <- Process{uid, name, pid, exe, state, ip, port, fip, fport}
@@ -230,25 +219,23 @@ func getInodes() []iNode {
 	inodes := make([]iNode, len(fileDescriptors))
 	res := make(chan iNode, len(fileDescriptors))
 
-	go func(fileDescriptors *[]string, output chan<-iNode) {
+	go func(fileDescriptors *[]string, output chan<- iNode) {
 		for _, item := range *fileDescriptors {
 			link, _ := os.Readlink(item)
 			output <- iNode{item, link}
 		}
 	}(&fileDescriptors, res)
 
-	for _, _ = range fileDescriptors {
-		inode := <- res
+	for range fileDescriptors {
+		inode := <-res
 		inodes = append(inodes, inode)
 	}
 	return inodes
 }
 
-
 func netstat(t string) []Process {
 	// Return a array of Process with Name, Ip, Port, State .. etc
 	// Require Root acess to get information about some processes.
-
 
 	data := getData(t)
 	Processes := make([]Process, len(data))
@@ -256,19 +243,17 @@ func netstat(t string) []Process {
 
 	inodes := getInodes()
 
-
 	for _, line := range data {
 		go processNetstatLine(line, &inodes, res)
 	}
 
-	for i, _ := range data {
-		p := <- res
+	for i := range data {
+		p := <-res
 		Processes[i] = p
 	}
 
 	return Processes
 }
-
 
 func Tcp() []Process {
 	// Get a slice of Process type with TCP data
@@ -276,20 +261,17 @@ func Tcp() []Process {
 	return data
 }
 
-
 func Udp() []Process {
 	// Get a slice of Process type with UDP data
 	data := netstat("udp")
 	return data
 }
 
-
 func Tcp6() []Process {
 	// Get a slice of Process type with TCP6 data
 	data := netstat("tcp6")
 	return data
 }
-
 
 func Udp6() []Process {
 	// Get a slice of Process type with UDP6 data
